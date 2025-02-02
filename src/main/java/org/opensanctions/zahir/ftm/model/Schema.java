@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,6 +23,8 @@ public class Schema {
     private final List<String> captionNames;
     private final Set<Schema> schemata;
     private final Map<String, Property> properties;
+    private Optional<Edge> edge;
+    private Optional<TemporalExtent> temporalExtent;
 
     public Schema(Model model, String name, List<String> extendsSchemata, String label, String plural, List<String> featured, List<String> required, List<String> caption) {
         this.model = model;
@@ -127,6 +130,22 @@ public class Schema {
         return captionProperties;
     }
 
+    public Optional<Edge> getEdge() {
+        return edge;
+    }
+
+    public boolean isEdge() {
+        return edge.isPresent();
+    }
+
+    public Optional<TemporalExtent> getTemporalExtent() {
+        return temporalExtent;
+    }
+
+    public boolean isTemporal() {
+        return temporalExtent.isPresent();
+    }
+
     @Override
     public String toString() {
         return name;
@@ -155,6 +174,11 @@ public class Schema {
             ModelHelper.getJsonStringArray(node, "featured"),
             ModelHelper.getJsonStringArray(node, "required"),
             ModelHelper.getJsonStringArray(node, "caption"));
+
+        Optional<Edge> edge = node.has("edge") ? Optional.of(Edge.fromJson(schema, node.get("edge"))) : Optional.empty();
+        schema.edge = edge;
+        Optional<TemporalExtent> temporalExtent = node.has("temporalExtent") ? Optional.of(TemporalExtent.fromJson(schema, node.get("temporalExtent"))) : Optional.empty();
+        schema.temporalExtent = temporalExtent;
 
         JsonNode propertiesNode = node.get("properties");
         Iterator<String> it = propertiesNode.fieldNames();

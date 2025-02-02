@@ -24,6 +24,10 @@ public class ModelTest {
         assertTrue(person.getExtends().size() == 1);
         assertTrue(person.isA(legalEntity));
         assertTrue(person.isA(person));
+        assertFalse(person.isEdge());
+        assertTrue(person.isTemporal());
+        assertEquals(person.getTemporalExtent().get().getStartProperties().getFirst(), person.getProperty("birthDate"));
+        assertEquals(person.getTemporalExtent().get().getEndProperties().getFirst(), person.getProperty("deathDate"));
         
         // Test getting a known property type
         PropertyType type = model.getType("name");
@@ -44,5 +48,12 @@ public class ModelTest {
         assertTrue(owner.getType().isEntity());
         assertTrue(owner.getRange().isPresent());
         assertTrue(owner.getRange().get() == legalEntity);
+
+        assertTrue(ownership.isEdge());
+        assertEquals(ownership.getEdge().get().getSourceProperty(), owner);
+        // FIXME: is this bad in the actual schema? 
+        // Property startDate = ownership.getProperty("startDate");
+        // assertTrue(ownership.isTemporal());
+        // assertEquals(ownership.getTemporalExtent().get().getStartProperties().getFirst(), startDate);
     }
 }
