@@ -1,4 +1,4 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.model;
 
 import java.util.ArrayList;
 import java.util.List;

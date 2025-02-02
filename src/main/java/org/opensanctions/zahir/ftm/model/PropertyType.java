@@ -1,9 +1,8 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class PropertyType {
-    private final Model model;
     private final String name;
     private final String label;
     private final String plural;
@@ -16,8 +15,7 @@ public class PropertyType {
     public static String NAME = "name".intern();
     public static String IDENTIFIER = "identifier".intern();
 
-    public PropertyType(Model model, String name, String label, String plural, String description, int maxLength, boolean matchable, boolean pivot) {
-        this.model = model;
+    public PropertyType(String name, String label, String plural, String description, int maxLength, boolean matchable, boolean pivot) {
         if (name == null) {
             throw new IllegalArgumentException("Property type name cannot be null");
         }
@@ -58,8 +56,12 @@ public class PropertyType {
         return pivot;
     }
 
-    public static PropertyType fromJson(Model model, String name, JsonNode node) {
-        return new PropertyType(model, name,
+    public boolean isEntity() {
+        return name.equals(ENTITY);
+    }
+
+    public static PropertyType fromJson(String name, JsonNode node) {
+        return new PropertyType(name,
             node.get("label").asText(),
             node.get("plural").asText(),
             node.get("description").asText(),

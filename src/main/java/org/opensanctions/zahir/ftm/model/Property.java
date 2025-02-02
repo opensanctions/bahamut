@@ -1,4 +1,4 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.model;
 
 import java.util.Optional;
 
@@ -28,10 +28,10 @@ public class Property {
         this.maxLength = maxLength;
         this.group = group;
         this.matchable = matchable;
-        if (type.getName().equals(PropertyType.ENTITY)) {
-            if (stub) {
-                throw new IllegalArgumentException("Only entity properties can be stubs");
-            }
+        if (!type.isEntity() && stub) {
+            throw new IllegalArgumentException("Only entity properties can be stubs: " + type.getName());
+        }
+        if (type.isEntity()) {
             if (reverse.isEmpty()) {
                 throw new IllegalArgumentException("Entity properties must have a reverse property");
             }
@@ -98,8 +98,8 @@ public class Property {
     public static Property fromJson(Schema schema, String name, JsonNode node) {
         PropertyType type = schema.getModel().getType(node.get("type").asText());
         String label = node.get("label").asText();
-        String plural = node.get("plural").asText();
-        int maxLength = node.get("maxLength").asInt();
+        String plural = node.has("plural") ? node.get("plural").asText() : label;
+        int maxLength = node.has("maxLength") ? node.get("maxLength").asInt() : type.getMaxLength();
         boolean matchable = node.has("matchable") ? node.get("matchable").asBoolean() : type.isMatchable();
         boolean stub = node.has("stub") ? node.get("stub").asBoolean() : false;
         Optional<String> group = node.has("group") ? Optional.of(node.get("group").asText()) : Optional.empty();

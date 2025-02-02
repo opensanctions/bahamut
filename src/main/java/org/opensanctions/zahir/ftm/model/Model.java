@@ -1,8 +1,12 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.model;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.opensanctions.zahir.App;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +48,7 @@ public class Model {
         while (it.hasNext()) {
             String typeName = it.next();
             JsonNode typeNode = jsonTypes.get(typeName);
-            PropertyType propertyType = PropertyType.fromJson(model, typeName, typeNode);
+            PropertyType propertyType = PropertyType.fromJson(typeName, typeNode);
             model.types.put(typeName, propertyType);
         }
         JsonNode jsonSchemata = node.get("schemata");
@@ -55,6 +59,17 @@ public class Model {
             Schema schema = Schema.fromJson(model, schemaName, schemaNode);
             model.schemata.put(schemaName, schema);
         }
+        for (Schema schema : model.schemata.values()) {
+            schema.buildHierarchy();
+        }
+        return model;
+    }
+
+    public static Model loadDefault() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        InputStream stream = App.class.getResourceAsStream("/model.json");
+        JsonNode root = mapper.readTree(stream);
+        Model model = Model.fromJson(mapper, root.get("model"));
         return model;
     }
 }

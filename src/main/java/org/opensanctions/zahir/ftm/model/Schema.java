@@ -1,4 +1,4 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +35,20 @@ public class Schema {
         this.properties = new HashMap<>();
     }
 
+    protected void buildHierarchy() {
+        for (Schema schema : getSchemata()) {
+            for (Property property : schema.getProperties()) {
+                if (!properties.containsKey(property.getName())) {
+                    properties.put(property.getName(), property);
+                }
+            }
+        }
+    }
+
+    protected Model getModel() {
+        return model;
+    }
+
     /**
      * Get a list of Schema objects that this schema extends from.
      * 
@@ -58,10 +72,6 @@ public class Schema {
             }
         }
         return schemata;
-    }
-
-    public Model getModel() {
-        return model;
     }
 
     public String getName() {
