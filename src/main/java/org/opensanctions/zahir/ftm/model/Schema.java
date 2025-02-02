@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -74,6 +75,10 @@ public class Schema {
         return schemata;
     }
 
+    public boolean isA(Schema schema) {
+        return getSchemata().contains(schema);
+    }
+
     public String getName() {
         return name;
     }
@@ -86,7 +91,7 @@ public class Schema {
         return plural;
     }
 
-    public void addProperty(Property property) {
+    protected void addProperty(Property property) {
         properties.put(property.getName(), property);
     }
 
@@ -125,6 +130,21 @@ public class Schema {
     @Override
     public String toString() {
         return name;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || !(obj instanceof Schema)) {
+            return false;
+        }
+        Schema other = (Schema) obj;
+        return name.equals(other.name);
     }
 
     public static Schema fromJson(Model model, String name, JsonNode node) {

@@ -1,5 +1,8 @@
 package org.opensanctions.zahir.ftm.model;
 
+import java.util.Objects;
+import java.util.Optional;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class PropertyType {
@@ -7,6 +10,7 @@ public class PropertyType {
     private final String label;
     private final String plural;
     private final String description;
+    private final Optional<String> group;
     private final int maxLength;
     private final boolean matchable;
     private final boolean pivot;
@@ -15,7 +19,7 @@ public class PropertyType {
     public static String NAME = "name".intern();
     public static String IDENTIFIER = "identifier".intern();
 
-    public PropertyType(String name, String label, String plural, String description, int maxLength, boolean matchable, boolean pivot) {
+    public PropertyType(String name, String label, String plural, String description, Optional<String> group, int maxLength, boolean matchable, boolean pivot) {
         if (name == null) {
             throw new IllegalArgumentException("Property type name cannot be null");
         }
@@ -23,6 +27,7 @@ public class PropertyType {
         this.label = label.length() == 0 ? this.name : label;
         this.plural = plural.length() == 0 ? this.label : plural;
         this.description = description;
+        this.group = group;
         this.maxLength = maxLength;
         this.matchable = matchable;
         this.pivot = pivot;
@@ -48,6 +53,10 @@ public class PropertyType {
         return maxLength;
     }
 
+    public Optional<String> getGroup() {
+        return group;
+    }
+
     public boolean isMatchable() {
         return matchable;
     }
@@ -60,11 +69,41 @@ public class PropertyType {
         return name.equals(ENTITY);
     }
 
+    public boolean isName() {
+        return name.equals(NAME);
+    }
+
+    public boolean isIdentifier() {
+        return name.equals(IDENTIFIER);
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || !(obj instanceof PropertyType)) {
+            return false;
+        }
+        PropertyType other = (PropertyType) obj;
+        return name.equals(other.name);
+    }
+
     public static PropertyType fromJson(String name, JsonNode node) {
+        Optional<String> group = node.has("group") ? Optional.of(node.get("group").asText()) : Optional.empty();
         return new PropertyType(name,
             node.get("label").asText(),
             node.get("plural").asText(),
             node.get("description").asText(),
+            group,
             node.get("maxLength").asInt(),
             node.has("matchable") ? node.get("matchable").asBoolean() : false,
             node.has("pivot") ? node.get("pivot").asBoolean() : false);

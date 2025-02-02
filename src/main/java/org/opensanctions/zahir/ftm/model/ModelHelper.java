@@ -12,8 +12,9 @@ public class ModelHelper {
         if (node == null || !node.has(key)) {
             return strings;
         }
-        if (node.isArray()) {
-            for (JsonNode element : node.get(key)) {
+        JsonNode value = node.get(key);
+        if (value.isArray()) {
+            for (JsonNode element : value) {
                 strings.add(element.asText());
             }
         }

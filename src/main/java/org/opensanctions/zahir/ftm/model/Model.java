@@ -49,7 +49,7 @@ public class Model {
             String typeName = it.next();
             JsonNode typeNode = jsonTypes.get(typeName);
             PropertyType propertyType = PropertyType.fromJson(typeName, typeNode);
-            model.types.put(typeName, propertyType);
+            model.types.put(propertyType.getName(), propertyType);
         }
         JsonNode jsonSchemata = node.get("schemata");
         it = jsonSchemata.fieldNames();
@@ -57,7 +57,7 @@ public class Model {
             String schemaName = it.next();
             JsonNode schemaNode = jsonSchemata.get(schemaName);
             Schema schema = Schema.fromJson(model, schemaName, schemaNode);
-            model.schemata.put(schemaName, schema);
+            model.schemata.put(schema.getName(), schema);
         }
         for (Schema schema : model.schemata.values()) {
             schema.buildHierarchy();
