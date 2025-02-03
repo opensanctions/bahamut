@@ -2,19 +2,21 @@ package org.opensanctions.zahir.ftm;
 
 import java.math.BigInteger;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
 public class Statement {
     // private static final String DEFAULT_LANG = "und";
-    private static final String EMPTY = "";
+    private static final String EMPTY = "".intern();
+    public static final String ID_PROP = "id".intern();
 
     private final BigInteger id;
     private final String entityId;
     private final String canonicalId;
     private final Schema schema;
-    private final Property property;
+    private final String propertyName;
     private final String dataset;
     private final String value;
     private final String lang;
@@ -23,16 +25,17 @@ public class Statement {
     private final long firstSeen;
     private final long lastSeen;
 
-    public Statement(BigInteger id, String entityId, String canonicalId, Schema schema, Property property, String dataset, String value, String lang, String originalValue, boolean external, long firstSeen, long lastSeen) {
+    public Statement(BigInteger id, String entityId, String canonicalId, Schema schema, String propertyName, String dataset, String value, String lang, String originalValue, boolean external, long firstSeen, long lastSeen) {
         this.id = id;
         this.entityId = entityId;
         this.canonicalId = canonicalId.equals(entityId) ? EMPTY : canonicalId;
         this.schema = schema;
-        this.property = property;
+        this.propertyName = propertyName.intern();
         this.dataset = dataset.intern();
-        this.value = value;
-        this.lang = lang.length() == 0 ? EMPTY : lang;
-        this.originalValue = originalValue.length() == 0 ? EMPTY : originalValue;
+        Property property = schema.getProperty(propertyName);
+        this.value = (property != null && property.isEnum()) ? value.intern() : value;
+        this.lang = lang == null || lang.length() == 0 ? EMPTY : lang;
+        this.originalValue = originalValue == null || originalValue.length() == 0 ? EMPTY : originalValue;
         this.external = external;
         this.firstSeen = firstSeen;
         this.lastSeen = lastSeen;
@@ -59,8 +62,16 @@ public class Statement {
         return schema;
     }
 
-    public Property getProperty() {
-        return property;
+    public Optional<Property> getProperty() {
+        Property property = schema.getProperty(propertyName);
+        if (property == null) {
+            return Optional.empty();
+        }
+        return Optional.of(property);
+    }
+
+    public String getPropertyName() {
+        return propertyName;
     }
 
     public String getDatasetName() {

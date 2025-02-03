@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 public class SchemaTest {
@@ -14,15 +16,15 @@ public class SchemaTest {
     public void testBasicSchemaProperties() {
         Model model = new Model();
         Map<String, PropertyType> types = model.getTypes();
-        PropertyType stringType = new PropertyType("string", "String", "Strings", "....", Optional.empty(), 65000, false, false);
+        PropertyType stringType = new PropertyType("string", "String", "Strings", "....", Optional.empty(), 65000, false, false, Optional.empty());
         assertEquals(stringType.isMatchable(), false);
         types.put("string", stringType);
-        PropertyType nameType = new PropertyType("name", "Name", "Names", "....", Optional.of("names"), 380, true, true);
+        PropertyType nameType = new PropertyType("name", "Name", "Names", "....", Optional.of("names"), 380, true, true, Optional.empty());
         types.put("name", nameType);
-        PropertyType countryType = new PropertyType("country", "Country", "Countries", "....", Optional.of("countries"), 7, true, true);
+        Map<String, String> countryValues = Map.of("us", "United States", "gb", "United Kingdom");
+        PropertyType countryType = new PropertyType("country", "Country", "Countries", "....", Optional.of("countries"), 7, true, true, Optional.of(countryValues));
         types.put(countryType.getName(), countryType);
         model.setTypes(types);
-
 
         List<String> extendsSchemata = new ArrayList<>();
         List<String> featured = Arrays.asList("name", "country");
@@ -45,6 +47,9 @@ public class SchemaTest {
         assertEquals(2, schema.getProperties().size());
         assertEquals(nameProperty, schema.getProperty("name"));
         assertEquals(countryProperty, schema.getProperty("country"));
+        
+        assertFalse(nameProperty.isEnum());
+        assertTrue(countryProperty.isEnum());
         
         assertEquals(2, schema.getFeaturedProperties().size());
         assertEquals(1, schema.getRequiredProperties().size());

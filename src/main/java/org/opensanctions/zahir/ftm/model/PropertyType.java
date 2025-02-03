@@ -1,5 +1,6 @@
 package org.opensanctions.zahir.ftm.model;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,12 +15,14 @@ public class PropertyType {
     private final int maxLength;
     private final boolean matchable;
     private final boolean pivot;
+    private final Optional<Map<String, String>> values;
+    private final boolean enumType;
 
     public static String ENTITY = "entity".intern();
     public static String NAME = "name".intern();
     public static String IDENTIFIER = "identifier".intern();
 
-    public PropertyType(String name, String label, String plural, String description, Optional<String> group, int maxLength, boolean matchable, boolean pivot) {
+    public PropertyType(String name, String label, String plural, String description, Optional<String> group, int maxLength, boolean matchable, boolean pivot, Optional<Map<String, String>> values) {
         if (name == null) {
             throw new IllegalArgumentException("Property type name cannot be null");
         }
@@ -31,6 +34,9 @@ public class PropertyType {
         this.maxLength = maxLength;
         this.matchable = matchable;
         this.pivot = pivot;
+        this.values = values;
+        this.values.ifPresent(v -> v.forEach((k, v1) -> k.intern()));
+        this.enumType = this.values.isPresent() && !this.values.get().isEmpty();
     }
 
     public String getName() {
@@ -77,6 +83,14 @@ public class PropertyType {
         return name.equals(IDENTIFIER);
     }
 
+    public Optional<Map<String, String>> getValues() {
+        return values;
+    }
+
+    public boolean isEnum() {
+        return enumType;
+    }
+
     @Override
     public String toString() {
         return name;
@@ -99,6 +113,7 @@ public class PropertyType {
 
     public static PropertyType fromJson(String name, JsonNode node) {
         Optional<String> group = node.has("group") ? Optional.of(node.get("group").asText()) : Optional.empty();
+        Optional<Map<String, String>> values = node.has("values") ? Optional.of(ModelHelper.getJsonStringMap(node, "values")) : Optional.empty();
         return new PropertyType(name,
             node.get("label").asText(),
             node.get("plural").asText(),
@@ -106,6 +121,7 @@ public class PropertyType {
             group,
             node.get("maxLength").asInt(),
             node.has("matchable") ? node.get("matchable").asBoolean() : false,
-            node.has("pivot") ? node.get("pivot").asBoolean() : false);
+            node.has("pivot") ? node.get("pivot").asBoolean() : false,
+            values);
     }
 }

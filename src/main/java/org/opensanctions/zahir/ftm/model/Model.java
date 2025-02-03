@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.opensanctions.zahir.App;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -67,7 +65,7 @@ public class Model {
 
     public static Model loadDefault() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        InputStream stream = App.class.getResourceAsStream("/model.json");
+        InputStream stream = Model.class.getResourceAsStream("/model.json");
         JsonNode root = mapper.readTree(stream);
         Model model = Model.fromJson(mapper, root.get("model"));
         return model;

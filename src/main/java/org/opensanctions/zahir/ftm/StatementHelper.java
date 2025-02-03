@@ -14,7 +14,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.opensanctions.zahir.ftm.model.Model;
-import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
 public class StatementHelper {
@@ -41,7 +40,7 @@ public class StatementHelper {
                 String idString = record.get("id");
                 BigInteger id = new BigInteger(idString, 16);
                 Schema schema = model.getSchema(record.get("schema"));
-                Property property = schema.getProperty(record.get("prop"));
+                String property = record.get("prop");
                 Instant firstSeen = parseDateTime(record.get("first_seen"));
                 Instant lastSeen = parseDateTime(record.get("last_seen"));
                 boolean external = record.get("external").equals("t");

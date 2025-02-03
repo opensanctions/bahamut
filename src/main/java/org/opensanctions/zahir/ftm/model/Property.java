@@ -69,6 +69,10 @@ public class Property {
         return stub;
     }
 
+    public boolean isEnum() {
+        return type.isEnum();
+    }
+
     public Optional<Schema> getRange() {
         if (!rangeName.isPresent()) {
             return Optional.empty();
