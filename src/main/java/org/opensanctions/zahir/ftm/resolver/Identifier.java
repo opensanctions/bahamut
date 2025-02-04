@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 public class Identifier implements Comparable<Identifier> {
     private static final String PREFIX = "NK-";
     private static final Pattern QID = Pattern.compile("^Q\\d+$");
-    private final String id;
+    protected final String id;
     private final int weight;
     private final boolean qid;
     private final boolean canonical;

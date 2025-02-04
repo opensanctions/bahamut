@@ -39,6 +39,16 @@ public class Entity {
         this.schema = schema;
     }
 
+    public String getCaption() {
+        for (Property prop : schema.getCaptionProperties()) {
+            if (properties.containsKey(prop)) {
+                // Put in the logic to pick the display name
+                return properties.get(prop).get(0).getValue();
+            }
+        }
+        return schema.getLabel();
+    }
+
     public void addStatement(Statement statement) {
         if (!statement.getCanonicalId().equals(id)) {
             throw new IllegalArgumentException("Statement does not belong to this entity.");

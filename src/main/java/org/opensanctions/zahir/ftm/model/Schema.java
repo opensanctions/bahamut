@@ -83,7 +83,7 @@ public class Schema {
     }
 
     public Schema commonWith(Schema other) {
-        if (other == this) {
+        if (other == this || other == null) {
             return this;
         }
         if (this.isA(other)) {

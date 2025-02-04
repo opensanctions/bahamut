@@ -8,7 +8,7 @@ public class Key {
     private static final byte SEPARATOR = ':';
     private static final String ENCODING = "UTF-8";
 
-    public static byte[] makeKey(String... parts) {
+    public static byte[] makeKey(boolean prefix, String... parts) {
         try(ByteArrayBuilder builder = new ByteArrayBuilder()) {
             for (int i = 0; i < parts.length; i++) {
                 if (i > 0) {
@@ -16,8 +16,19 @@ public class Key {
                 }
                 builder.write(parts[i].getBytes());
             }
+            if (prefix) {
+                builder.append(SEPARATOR);
+            }
             return builder.toByteArray();
         }
+    }
+
+    public static byte[] makeKey(String... parts) {
+        return makeKey(false, parts);
+    }
+
+    public static byte[] makePrefix(String... parts) {
+        return makeKey(true, parts);
     }
 
     public static String[] splitKey(byte[] key) {

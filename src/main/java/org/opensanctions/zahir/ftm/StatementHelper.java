@@ -33,7 +33,7 @@ public class StatementHelper {
         CSVFormat format = CSVFormat.DEFAULT.builder().setHeader().build();
         // List<Statement> statements = new ArrayList<>();
         long count = 0;
-        StoreWriter writer = store.getWriter("test", "ALPHA");
+        StoreWriter writer = store.getWriter("test", Store.XXX_VERSION);
         System.out.println("Loading statements from " + path);
         try (CSVParser csvParser = new CSVParser(reader, format)) {
             for (CSVRecord record : csvParser) {

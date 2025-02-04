@@ -1,22 +1,26 @@
 package org.opensanctions.zahir.db;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.opensanctions.zahir.ftm.Entity;
 import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.model.Property;
+import org.opensanctions.zahir.ftm.model.Schema;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
 public class StoreWriter implements AutoCloseable {
-    private static final int BATCH_SIZE = 10000;
+    private static final int BATCH_SIZE = 100000;
 
     private final Store store;
     private final String dataset;
     private final String version;
     private WriteBatch batch;
     private final WriteOptions writeOptions;
+    private final Map<String, Schema> entitySchemata;
     
     public StoreWriter(Store store, String dataset, String version) {
         this.store = store;
@@ -24,15 +28,20 @@ public class StoreWriter implements AutoCloseable {
         this.version = version;
         this.batch = new WriteBatch();
         this.writeOptions = new WriteOptions();
+        this.entitySchemata = new HashMap<>();
     }
 
     public void writeStatement(Statement statement) throws RocksDBException {
-        // TODO: do this only once per entity
-        String entityId = statement.getEntityId();
-        byte[] schemaBytes = statement.getSchema().getName().getBytes();
-        byte[] entityKey = Key.makeKey(dataset, version, Store.ENTITY_KEY, entityId);
-        batch.put(entityKey, schemaBytes);
+        // TODO: check statements are in the right dataset
 
+        // Do this only once per entity and batch
+        String entityId = statement.getEntityId();
+        Schema schema = statement.getSchema();
+        Schema existing = entitySchemata.get(entityId);
+        if (existing != schema) {
+            this.entitySchemata.put(entityId, schema.commonWith(existing));
+        }
+        
         String external = statement.isExternal() ? "x" : "";
         byte[] statementKey = Key.makeKey(dataset, version, Store.STATEMENT_KEY, entityId, external, statement.getId(), statement.getSchema().getName(), statement.getPropertyName());
         // TODO: serialize!!!
@@ -60,12 +69,18 @@ public class StoreWriter implements AutoCloseable {
     }
 
     public void flush() throws RocksDBException {
-        if (batch.count() == 0) {
+        if (batch.count() == 0 && entitySchemata.isEmpty()) {
             return;
+        }
+        for (String entityId : entitySchemata.keySet()) {
+            byte[] schemaBytes = entitySchemata.get(entityId).getName().getBytes();
+            byte[] entityKey = Key.makeKey(dataset, version, Store.ENTITY_KEY, entityId);
+            batch.put(entityKey, schemaBytes);
         }
         store.getDB().write(writeOptions, batch);
         batch.close();
         batch = new WriteBatch();
+        entitySchemata.clear();
     }
 
     @Override
