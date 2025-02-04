@@ -1,13 +1,13 @@
 package org.opensanctions.zahir.ftm;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opensanctions.zahir.ftm.model.Model;
@@ -29,13 +29,13 @@ public class EntityTest {
     @Test
     public void testEntityFromStatements() {
         Schema schema = model.getSchema("Person");
-        Statement stmt1 = new Statement("aaa", ENTITY_ID, CANONICAL_ID, schema, 
-            "name", DATASET, "Harry Smith", null, null, false, 100L, 200L);
-        Statement stmt1b = new Statement("a5a", ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt1 = new Statement(BigInteger.ONE, ENTITY_ID, CANONICAL_ID, schema, 
+            "name", DATASET, "Harry Smith", "", "", false, 100L, 200L);
+        Statement stmt1b = new Statement(BigInteger.TEN, ENTITY_ID, CANONICAL_ID, schema, 
             "name", DATASET, "Harry M. Smith", "", "", false, 100L, 200L);
-        Statement stmt2 = new Statement("aa6", ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt2 = new Statement(new BigInteger("156", 10), ENTITY_ID, CANONICAL_ID, schema, 
             "country", DATASET, "gb", null, null, false, 100L, 200L);
-        Statement stmt3 = new Statement("aac", ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt3 = new Statement(new BigInteger("56", 10), ENTITY_ID, CANONICAL_ID, schema, 
             "birthDate", DATASET, "1980-01-15", null, null, false, 100L, 200L);
         List<Statement> stmts = new ArrayList<>();
         stmts.add(stmt1);
