@@ -13,7 +13,7 @@ import org.opensanctions.zahir.ftm.model.Schema;
 
 public class StatementTest {
     private static Model model;
-    private static final BigInteger ID = BigInteger.valueOf(123);
+    private static final String ID = "aaa";
     private static final String ENTITY_ID = "entity1";
     private static final String CANONICAL_ID = "canon1";
     private static final String PROP_NAME = "name";

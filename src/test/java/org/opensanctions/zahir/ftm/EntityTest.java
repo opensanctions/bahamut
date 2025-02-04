@@ -1,7 +1,6 @@
 package org.opensanctions.zahir.ftm;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,13 +28,13 @@ public class EntityTest {
     @Test
     public void testEntityFromStatements() {
         Schema schema = model.getSchema("Person");
-        Statement stmt1 = new Statement(BigInteger.ONE, ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt1 = new Statement("a1", ENTITY_ID, CANONICAL_ID, schema, 
             "name", DATASET, "Harry Smith", "", "", false, 100L, 200L);
-        Statement stmt1b = new Statement(Statement.parseId("aaa"), ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt1b = new Statement("aaa", ENTITY_ID, CANONICAL_ID, schema, 
             "name", DATASET, "Harry M. Smith", "", "", false, 100L, 200L);
-        Statement stmt2 = new Statement(Statement.parseId("aab"), ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt2 = new Statement("aab", ENTITY_ID, CANONICAL_ID, schema, 
             "country", DATASET, "gb", null, null, false, 100L, 200L);
-        Statement stmt3 = new Statement(Statement.parseId("deadbeef"), ENTITY_ID, CANONICAL_ID, schema, 
+        Statement stmt3 = new Statement("deadbeef", ENTITY_ID, CANONICAL_ID, schema, 
             "birthDate", DATASET, "1980-01-15", null, null, false, 100L, 200L);
         List<Statement> stmts = new ArrayList<>();
         stmts.add(stmt1);

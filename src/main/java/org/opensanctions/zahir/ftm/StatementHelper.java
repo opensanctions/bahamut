@@ -4,16 +4,17 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.opensanctions.zahir.db.Store;
+import org.opensanctions.zahir.db.StoreWriter;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
+import org.rocksdb.RocksDBException;
 
 public class StatementHelper {
     private final static Map<String, Instant> dateCache = new HashMap<>();
@@ -27,11 +28,12 @@ public class StatementHelper {
         return instant;
     }
     
-    public static void loadStatementsFromCSVPath(Model model, String path) throws FileNotFoundException {
+    public static void loadStatementsFromCSVPath(Model model, Store store, String path) throws FileNotFoundException, RocksDBException {
         Reader reader = new FileReader(path);
         CSVFormat format = CSVFormat.DEFAULT.builder().setHeader().build();
-        List<Statement> statements = new ArrayList<>();
+        // List<Statement> statements = new ArrayList<>();
         long count = 0;
+        StoreWriter writer = store.getWriter("test", "ALPHA");
         System.out.println("Loading statements from " + path);
         try (CSVParser csvParser = new CSVParser(reader, format)) {
             for (CSVRecord record : csvParser) {
@@ -46,8 +48,9 @@ public class StatementHelper {
                 Instant lastSeen = parseDateTime(record.get("last_seen"));
                 boolean external = record.get("external").startsWith("t");
 
-                Statement stmt = new Statement(Statement.parseId(record.get("id")), record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
-                statements.add(stmt);
+                Statement stmt = new Statement(record.get("id"), record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
+                // writer.writeStatement(stmt);
+                // statements.add(stmt);
                 if (count > 0 && count % 100000 == 0) {
                     System.err.println(count);
                     // System.out.println();
@@ -57,9 +60,11 @@ public class StatementHelper {
                 // System.err.println(id);
                 // Process each record
             }
+            System.err.println("Total: " + count);
+            writer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.err.println(statements.size());
+        
     }
 }

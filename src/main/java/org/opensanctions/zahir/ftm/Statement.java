@@ -25,8 +25,8 @@ public class Statement {
     private final long firstSeen;
     private final long lastSeen;
 
-    public Statement(BigInteger id, String entityId, String canonicalId, Schema schema, String propertyName, String dataset, String value, String lang, String originalValue, boolean external, long firstSeen, long lastSeen) {
-        this.id = id;
+    public Statement(String id, String entityId, String canonicalId, Schema schema, String propertyName, String dataset, String value, String lang, String originalValue, boolean external, long firstSeen, long lastSeen) {
+        this.id = parseId(id);
         this.entityId = entityId;
         this.canonicalId = canonicalId.equals(entityId) ? EMPTY : canonicalId;
         this.schema = schema;
@@ -116,7 +116,7 @@ public class Statement {
         if (canonicalId.equals(getCanonicalId())) {
             return this;
         }
-        return new Statement(id, entityId, canonicalId, schema, propertyName, dataset, value, lang, originalValue, external, firstSeen, lastSeen);
+        return new Statement(this.getId(), entityId, canonicalId, schema, propertyName, dataset, value, lang, originalValue, external, firstSeen, lastSeen);
     }
 
     public static BigInteger parseId(String id) {
