@@ -3,7 +3,6 @@ package org.opensanctions.zahir.ftm;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,8 +36,6 @@ public class StatementHelper {
         try (CSVParser csvParser = new CSVParser(reader, format)) {
             for (CSVRecord record : csvParser) {
                 count++;
-                String idString = record.get("id");
-                BigInteger id = new BigInteger(idString, 16);
                 Schema schema = model.getSchema(record.get("schema"));
                 if (schema == null) {
                     System.err.println("Schema not found: " + record.get("schema"));
@@ -49,7 +46,7 @@ public class StatementHelper {
                 Instant lastSeen = parseDateTime(record.get("last_seen"));
                 boolean external = record.get("external").startsWith("t");
 
-                Statement stmt = new Statement(id, record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
+                Statement stmt = new Statement(Statement.parseId(record.get("id")), record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
                 statements.add(stmt);
                 if (count > 0 && count % 100000 == 0) {
                     System.err.println(count);

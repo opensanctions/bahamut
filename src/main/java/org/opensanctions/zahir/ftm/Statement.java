@@ -41,11 +41,7 @@ public class Statement {
         this.lastSeen = lastSeen;
     }
 
-    public BigInteger getId() {
-        return id;
-    }
-
-    public String getIdString() {
+    public String getId() {
         return id.toString(16);
     }
 
@@ -121,5 +117,9 @@ public class Statement {
             return this;
         }
         return new Statement(id, entityId, canonicalId, schema, propertyName, dataset, value, lang, originalValue, external, firstSeen, lastSeen);
+    }
+
+    public static BigInteger parseId(String id) {
+        return new BigInteger(id, 16);
     }
 }
