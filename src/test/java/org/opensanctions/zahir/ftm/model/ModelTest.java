@@ -26,8 +26,8 @@ public class ModelTest {
         assertTrue(person.isA(person));
         assertFalse(person.isEdge());
         assertTrue(person.isTemporal());
-        assertEquals(person.getTemporalExtent().get().getStartProperties().getFirst(), person.getProperty("birthDate"));
-        assertEquals(person.getTemporalExtent().get().getEndProperties().getFirst(), person.getProperty("deathDate"));
+        assertEquals(person.getTemporalExtent().get().getStartProperties().get(0), person.getProperty("birthDate"));
+        assertEquals(person.getTemporalExtent().get().getEndProperties().get(0), person.getProperty("deathDate"));
         
         // Test getting a known property type
         PropertyType type = model.getType("name");

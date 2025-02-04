@@ -82,6 +82,24 @@ public class Schema {
         return getSchemata().contains(schema);
     }
 
+    public Schema commonWith(Schema other) {
+        if (other == this) {
+            return this;
+        }
+        if (this.isA(other)) {
+            return other;
+        } 
+        if (other.isA(this)) {
+            return this;
+        }
+        for (Schema third : getModel().getSchemata().values()) {
+            if (third.isA(this) && third.isA(other)) {
+                return third;
+            }
+        }
+        throw new IllegalArgumentException("No common schema found!");
+    }
+
     public String getName() {
         return name;
     }
@@ -100,6 +118,10 @@ public class Schema {
 
     public Property getProperty(String name) {
         return properties.get(name);
+    }
+
+    public boolean hasProperty(String name) {
+        return properties.containsKey(name);
     }
 
     public List<Property> getProperties() {

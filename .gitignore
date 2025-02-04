@@ -2,3 +2,4 @@
 *.class
 .vscode
 target/
+/data/

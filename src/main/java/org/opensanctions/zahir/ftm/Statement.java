@@ -115,4 +115,11 @@ public class Statement {
         Statement other = (Statement) obj;
         return id.equals(other.id);
     }
+
+    public Statement withCanonicalId(String canonicalId) {
+        if (canonicalId.equals(getCanonicalId())) {
+            return this;
+        }
+        return new Statement(id, entityId, canonicalId, schema, propertyName, dataset, value, lang, originalValue, external, firstSeen, lastSeen);
+    }
 }

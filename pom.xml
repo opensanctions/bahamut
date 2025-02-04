@@ -63,6 +63,11 @@
             <artifactId>caffeine</artifactId>
             <version>3.2.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>9.10.0</version>
+        </dependency>
     </dependencies>
 
     <build>

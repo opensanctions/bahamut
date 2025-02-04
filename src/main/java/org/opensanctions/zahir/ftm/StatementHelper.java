@@ -40,10 +40,14 @@ public class StatementHelper {
                 String idString = record.get("id");
                 BigInteger id = new BigInteger(idString, 16);
                 Schema schema = model.getSchema(record.get("schema"));
+                if (schema == null) {
+                    System.err.println("Schema not found: " + record.get("schema"));
+                    continue;
+                }
                 String property = record.get("prop");
                 Instant firstSeen = parseDateTime(record.get("first_seen"));
                 Instant lastSeen = parseDateTime(record.get("last_seen"));
-                boolean external = record.get("external").equals("t");
+                boolean external = record.get("external").startsWith("t");
 
                 Statement stmt = new Statement(id, record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
                 statements.add(stmt);
