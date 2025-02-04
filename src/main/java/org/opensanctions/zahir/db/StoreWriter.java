@@ -22,14 +22,11 @@ public class StoreWriter implements AutoCloseable {
         this.store = store;
         this.dataset = dataset;
         this.version = version;
+        this.batch = new WriteBatch();
         this.writeOptions = new WriteOptions();
     }
 
     public void writeStatement(Statement statement) throws RocksDBException {
-        if (batch == null) {
-            batch = new WriteBatch();
-        }
-        
         // TODO: do this only once per entity
         String entityId = statement.getEntityId();
         byte[] schemaBytes = statement.getSchema().getName().getBytes();
@@ -51,7 +48,6 @@ public class StoreWriter implements AutoCloseable {
             }
         }
         
-        // store.write(statement);
         if (batch.count() >= BATCH_SIZE) {
             flush();
         }
@@ -69,6 +65,7 @@ public class StoreWriter implements AutoCloseable {
         }
         store.getDB().write(writeOptions, batch);
         batch.close();
+        batch = new WriteBatch();
     }
 
     @Override

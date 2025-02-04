@@ -49,7 +49,7 @@ public class StatementHelper {
                 boolean external = record.get("external").startsWith("t");
 
                 Statement stmt = new Statement(record.get("id"), record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
-                // writer.writeStatement(stmt);
+                writer.writeStatement(stmt);
                 // statements.add(stmt);
                 if (count > 0 && count % 100000 == 0) {
                     System.err.println(count);
