@@ -2,9 +2,11 @@ package org.opensanctions.zahir.ftm.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -21,6 +23,12 @@ public class ModelHelper {
                 strings.add(element.asText());
             }
         }
+        return strings;
+    }
+
+    public static Set<String> getJsonStringSet(JsonNode node, String key) {
+        Set<String> strings = new HashSet<>();
+        strings.addAll(getJsonStringArray(node, key));
         return strings;
     }
 

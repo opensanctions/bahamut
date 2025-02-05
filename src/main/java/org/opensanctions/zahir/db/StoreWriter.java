@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.opensanctions.zahir.ftm.Entity;
 import org.opensanctions.zahir.ftm.Statement;
+import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.rocksdb.RocksDBException;
@@ -62,7 +62,7 @@ public class StoreWriter implements AutoCloseable {
         }
     }
 
-    public void writeEntity(Entity entity) throws RocksDBException{
+    public void writeEntity(StatementEntity entity) throws RocksDBException{
         for (Statement stmt : entity.getAllStatements()) {
             writeStatement(stmt);
         }

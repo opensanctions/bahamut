@@ -5,10 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import org.opensanctions.zahir.ftm.Entity;
 import org.opensanctions.zahir.ftm.Statement;
+import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.resolver.Identifier;
 import org.opensanctions.zahir.ftm.resolver.Linker;
 import org.rocksdb.RocksDB;
@@ -62,8 +63,12 @@ public class StoreView {
         return statements;
     }
 
-    public Entity getEntity(String entityId) throws RocksDBException {
-        return Entity.fromStatements(getStatements(entityId));
+    public Optional<StatementEntity> getEntity(String entityId) throws RocksDBException {
+        List<Statement> statements = getStatements(entityId);
+        if (statements.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(StatementEntity.fromStatements(statements));
     }
 
 }

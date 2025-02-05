@@ -1,4 +1,4 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.entity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,16 +7,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
-public class Entity {
+public class StatementEntity {
     private String id;
     private Schema schema;
     private final Map<Property, List<Statement>> properties;
     private final List<Statement> idStatements;
 
-    public Entity(String id, Schema schema, Map<Property, List<Statement>> properties, List<Statement> idStatements) {
+    public StatementEntity(String id, Schema schema, Map<Property, List<Statement>> properties, List<Statement> idStatements) {
         this.id = id;
         this.schema = schema;
         this.properties = properties;
@@ -49,6 +50,30 @@ public class Entity {
         return schema.getLabel();
     }
 
+    public Set<String> getDatasets() {
+        Set<String> datasets = new HashSet<>();
+        for (Statement statement : getAllStatements()) {
+            datasets.add(statement.getDatasetName());
+        }
+        return datasets;
+    }
+
+    public Set<String> getReferents() {
+        Set<String> referents = new HashSet<>();
+        for (Statement statement : getAllStatements()) {
+            referents.add(statement.getEntityId());
+        }
+        return referents;
+    }
+
+    public String getFirstSeen() {
+        List<long> firstSeens = new ArrayList<>();
+        for (Statement statement : getAllStatements()) {
+            firstSeens
+        }
+        return Long.toString(firstSeen);
+    }
+
     public void addStatement(Statement statement) {
         if (!statement.getCanonicalId().equals(id)) {
             throw new IllegalArgumentException("Statement does not belong to this entity.");
@@ -73,13 +98,16 @@ public class Entity {
         return properties.get(property);
     }
 
-    public Set<String> getValues(Property property) {
-        Set<String> values = new HashSet<>();
+    public List<String> getValues(Property property) {
+        List<String> values = new ArrayList<>();
         if (!properties.containsKey(property)) {
             return values;
         }
         for (Statement statement : properties.get(property)) {
-            values.add(statement.getValue());
+            String value = statement.getValue();
+            if (!values.contains(value)) {
+                values.add(value);
+            }
         }
         return values;
     }
@@ -101,7 +129,7 @@ public class Entity {
         return !properties.isEmpty();
     }
 
-    public static Entity fromStatements(String canonicalId, List<Statement> statements) {
+    public static StatementEntity fromStatements(String canonicalId, List<Statement> statements) {
         if (statements.isEmpty()) {
             throw new IllegalArgumentException("Cannot create entity from empty list of statements.");
         }
@@ -118,10 +146,10 @@ public class Entity {
                 properties.computeIfAbsent(prop, k -> new ArrayList<>()).add(statement);
             }
         }
-        return new Entity(canonicalId, schema, properties, idStatements);
+        return new StatementEntity(canonicalId, schema, properties, idStatements);
     }
 
-    public static Entity fromStatements(List<Statement> statements) {
+    public static StatementEntity fromStatements(List<Statement> statements) {
         if (statements.isEmpty()) {
             throw new IllegalArgumentException("Cannot create entity from empty list of statements.");
         }

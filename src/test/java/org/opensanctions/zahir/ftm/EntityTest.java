@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
 
@@ -40,7 +41,7 @@ public class EntityTest {
         stmts.add(stmt1);
         stmts.add(stmt1b);
         stmts.add(stmt2);
-        Entity entity = Entity.fromStatements(stmts);
+        StatementEntity entity = StatementEntity.fromStatements(stmts);
         assertTrue(entity.has(schema.getProperty("name")));
         assertEquals(entity.getStatements(schema.getProperty("name")).size(), 2);
         assertFalse(entity.has(schema.getProperty("birthDate")));
