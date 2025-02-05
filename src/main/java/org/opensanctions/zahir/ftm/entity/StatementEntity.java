@@ -1,5 +1,6 @@
 package org.opensanctions.zahir.ftm.entity;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,36 +12,18 @@ import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
-public class StatementEntity {
-    private String id;
-    private Schema schema;
+public class StatementEntity extends Entity {
     private final Map<Property, List<Statement>> properties;
     private final List<Statement> idStatements;
 
     public StatementEntity(String id, Schema schema, Map<Property, List<Statement>> properties, List<Statement> idStatements) {
-        this.id = id;
-        this.schema = schema;
+        super(id, schema);
         this.properties = properties;
         this.idStatements = idStatements;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public Schema getSchema() {
-        return schema;
-    }
-
-    public void setSchema(Schema schema) {
-        this.schema = schema;
-    }
-
-    public String getCaption() {
+    @Override
+    protected String pickCaption() {
         for (Property prop : schema.getCaptionProperties()) {
             if (properties.containsKey(prop)) {
                 // Put in the logic to pick the display name
@@ -50,6 +33,12 @@ public class StatementEntity {
         return schema.getLabel();
     }
 
+    @Override
+    public String getCaption() {
+        return pickCaption();
+    }
+
+    @Override
     public Set<String> getDatasets() {
         Set<String> datasets = new HashSet<>();
         for (Statement statement : getAllStatements()) {
@@ -58,6 +47,7 @@ public class StatementEntity {
         return datasets;
     }
 
+    @Override
     public Set<String> getReferents() {
         Set<String> referents = new HashSet<>();
         for (Statement statement : getAllStatements()) {
@@ -66,17 +56,31 @@ public class StatementEntity {
         return referents;
     }
 
+    @Override
     public String getFirstSeen() {
-        List<long> firstSeens = new ArrayList<>();
+        long firstSeen = Long.MAX_VALUE;
         for (Statement statement : getAllStatements()) {
-            firstSeens
+            firstSeen = Math.min(firstSeen, statement.getFirstSeen());
         }
-        return Long.toString(firstSeen);
+        return Instant.ofEpochSecond(firstSeen).toString();
+    }
+
+    @Override
+    public String getLastSeen() {
+        long lastSeen = 0;
+        for (Statement statement : getAllStatements()) {
+            lastSeen = Math.min(lastSeen, statement.getFirstSeen());
+        }
+        return Instant.ofEpochSecond(lastSeen).toString();
     }
 
     public void addStatement(Statement statement) {
         if (!statement.getCanonicalId().equals(id)) {
             throw new IllegalArgumentException("Statement does not belong to this entity.");
+        }
+        Schema stmtSchema = statement.getSchema();
+        if (stmtSchema != this.schema) {
+            this.schema = this.schema.commonWith(stmtSchema);
         }
         String propName = statement.getPropertyName();
         if (propName == null || !schema.hasProperty(propName)) {
@@ -98,6 +102,7 @@ public class StatementEntity {
         return properties.get(property);
     }
 
+    @Override
     public List<String> getValues(Property property) {
         List<String> values = new ArrayList<>();
         if (!properties.containsKey(property)) {
@@ -127,6 +132,21 @@ public class StatementEntity {
     public boolean hasStatements() {
         // FIXME: Check idProperties?
         return !properties.isEmpty();
+    }
+
+    public ValueEntity toValueEntity() {
+        ValueEntity ve = new ValueEntity(id, schema);
+        for (Property prop : properties.keySet()) {
+            for (Statement stmt : properties.get(prop)) {
+                ve.addValue(prop, stmt.getValue());
+            }
+        }
+        ve.setCaption(getCaption());
+        ve.setDatasets(getDatasets());
+        ve.setReferents(getReferents());
+        ve.setFirstSeen(getFirstSeen());
+        ve.setLastSeen(getLastSeen());
+        return ve;
     }
 
     public static StatementEntity fromStatements(String canonicalId, List<Statement> statements) {

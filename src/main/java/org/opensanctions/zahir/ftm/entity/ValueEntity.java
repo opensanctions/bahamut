@@ -14,10 +14,8 @@ import org.opensanctions.zahir.ftm.model.Schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class ValueEntity {
-    private String id;
-    private Schema schema;
-    private String caption;
+public class ValueEntity extends Entity {
+    
     private Set<String> datasets;
     private Set<String> referents;
     private String firstSeen;
@@ -25,8 +23,7 @@ public class ValueEntity {
     private final Map<Property, List<String>> properties;
 
     public ValueEntity(String id, Schema schema, Map<Property, List<String>> properties) {
-        this.id = id;
-        this.schema = schema;
+        super(id, schema);
         this.properties = properties;
     }
 
@@ -34,15 +31,8 @@ public class ValueEntity {
         this(id, schema, new HashMap<>());
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public Schema getSchema() {
-        return schema;
-    }
-
-    public String pickCaption() {
+    @Override
+    protected String pickCaption() {
         for (Property prop : schema.getCaptionProperties()) {
             if (properties.containsKey(prop)) {
                 // Put in the logic to pick the display name
@@ -52,17 +42,7 @@ public class ValueEntity {
         return schema.getLabel();
     }
 
-    public String getCaption() {
-        if (caption == null) {
-            caption = pickCaption();
-        }
-        return caption;
-    }
-
-    public void setCaption(String caption) {
-        this.caption = caption;
-    }
-
+    @Override
     public Set<String> getDatasets() {
         return datasets;
     }
@@ -71,6 +51,7 @@ public class ValueEntity {
         this.datasets = datasets;
     }
 
+    @Override
     public Set<String> getReferents() {
         return referents;
     }
@@ -79,6 +60,7 @@ public class ValueEntity {
         this.referents = referents;
     }
 
+    @Override
     public String getFirstSeen() {
         return firstSeen;
     }
@@ -87,6 +69,7 @@ public class ValueEntity {
         this.firstSeen = firstSeen;
     }
 
+    @Override
     public String getLastSeen() {
         return lastSeen;
     }
@@ -99,6 +82,7 @@ public class ValueEntity {
         return properties.containsKey(property);
     }
 
+    @Override
     public List<String> getValues(Property property) {
         if (!properties.containsKey(property)) {
             return new ArrayList<>();
