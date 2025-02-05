@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.opensanctions.zahir.ftm.exceptions.SchemaException;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.ModelHelper;
 import org.opensanctions.zahir.ftm.model.Property;
@@ -90,10 +91,10 @@ public class ValueEntity extends Entity {
         return properties.get(property);
     }
 
-    public void addValue(String propertyName, String value) {
+    public void addValue(String propertyName, String value) throws SchemaException {
         Property property = schema.getProperty(propertyName);
         if (property == null) {
-            throw new IllegalArgumentException("Invalid property: " + propertyName);
+            throw new SchemaException("Invalid property: " + propertyName);
         }
         addValue(property, value);
     }
@@ -110,15 +111,46 @@ public class ValueEntity extends Entity {
     }
 
     // public JsonNode toValueJson() {
-    //     JsonNode node = new JsonNode();
+    //     JsonNode node = super.toJson();
+    //     node.put("type", "value");
+    //     node.put("schema", schema.getName());
+    //     if (caption != null) {
+    //         node.put("caption", caption);
+    //     }
+    //     if (!properties.isEmpty()) {
+    //         JsonNode propsNode = node.putObject("properties");
+    //         for (Map.Entry<Property, List<String>> entry : properties.entrySet()) {
+    //             Property property = entry.getKey();
+    //             List<String> values = entry.getValue();
+    //             if (property.isEnum()) {
+    //                 for (int i = 0; i < values.size(); i++) {
+    //                     values.set(i, values.get(i).intern());
+    //                 }
+    //             }
+    //             ModelHelper.setJsonStringArray(propsNode, property.getName(), values);
+    //         }
+    //     }
+    //     if (datasets != null) {
+    //         ModelHelper.setJsonStringSet(node, "datasets", datasets);
+    //     }
+    //     if (referents != null) {
+    //         ModelHelper.setJsonStringSet(node, "referents", referents);
+    //     }
+    //     if (firstSeen != null) {
+    //         node.put("first_seen", firstSeen);
+    //     }
+    //     if (lastSeen != null) {
+    //         node.put("last_seen", lastSeen);
+    //     }
+    //     return node;
     // }
 
-    public static ValueEntity fromJson(Model model, JsonNode node) {
+    public static ValueEntity fromJson(Model model, JsonNode node) throws SchemaException {
         String entityId = node.get("id").asText();
         String schemaName = node.get("schema").asText();
         Schema schema = model.getSchema(schemaName);
         if (schema == null) {
-            throw new IllegalArgumentException("Invalid schema: " + schemaName);
+            throw new SchemaException("Invalid schema: " + schemaName);
         }
         Map<Property, List<String>> properties = new HashMap<>();
         if (node.has("properties")) {

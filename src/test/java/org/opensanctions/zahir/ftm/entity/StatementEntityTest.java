@@ -1,4 +1,4 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.entity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,17 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opensanctions.zahir.ftm.entity.StatementEntity;
+import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
 
-public class EntityTest {
+public class StatementEntityTest {
     private static Model model;
     private static final String ENTITY_ID = "entity1";
     private static final String CANONICAL_ID = "canon1";
     private static final String DATASET = "test";
-    private static final String LANG = "eng";
-    
 
     @BeforeAll
     public static void setUp() throws IOException {

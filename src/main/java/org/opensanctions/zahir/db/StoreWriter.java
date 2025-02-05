@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.opensanctions.zahir.db.proto.StatementValue;
 import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.model.Property;
@@ -44,8 +45,15 @@ public class StoreWriter implements AutoCloseable {
         
         String external = statement.isExternal() ? "x" : "";
         byte[] statementKey = Key.makeKey(dataset, version, Store.STATEMENT_KEY, entityId, external, statement.getId(), statement.getSchema().getName(), statement.getPropertyName());
-        // TODO: serialize!!!
-        batch.put(statementKey, statement.getValue().getBytes());
+
+        StatementValue stmtValue = StatementValue.newBuilder()
+            .setValue(statement.getValue())
+            .setLang(statement.getLang())
+            .setOriginalValue(statement.getOriginalValue())
+            .setFirstSeen(statement.getFirstSeen())
+            .setLastSeen(statement.getLastSeen())
+            .build();
+        batch.put(statementKey, stmtValue.toByteArray());
 
         Optional<Property> property = statement.getProperty();
         if (property.isPresent()) {

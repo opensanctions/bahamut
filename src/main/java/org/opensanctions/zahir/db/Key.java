@@ -38,4 +38,16 @@ public class Key {
             return new String[0];
         }
     }
+
+    public static boolean hasPrefix(byte[] key, byte[] prefix) {
+        if (prefix.length > key.length) {
+            return false;
+        }
+        for (int i = 0; i < prefix.length; i++) {
+            if (prefix[i] != key[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

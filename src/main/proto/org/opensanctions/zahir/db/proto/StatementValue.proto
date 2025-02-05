@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package org.opensanctions.zahir.db.proto;
+
+option java_package = "org.opensanctions.zahir.db.proto";
+option java_multiple_files = true;
+
+message StatementValue {
+    string value = 1;
+    string lang = 2;
+    string originalValue = 3;
+    int64 first_seen = 4;
+    int64 last_seen = 5;
+}
