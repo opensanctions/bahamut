@@ -15,6 +15,8 @@ import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.statement.Statement;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class StatementEntity extends Entity {
     private final Map<Property, List<Statement>> properties;
     private final List<Statement> idStatements;
@@ -44,7 +46,7 @@ public class StatementEntity extends Entity {
     @Override
     public Set<String> getDatasets() {
         Set<String> datasets = new HashSet<>();
-        for (Statement statement : getAllStatements()) {
+        for (Statement statement : getAllStatements(false)) {
             datasets.add(statement.getDatasetName());
         }
         return datasets;
@@ -53,37 +55,37 @@ public class StatementEntity extends Entity {
     @Override
     public Set<String> getReferents() {
         Set<String> referents = new HashSet<>();
-        for (Statement statement : getAllStatements()) {
+        for (Statement statement : getAllStatements(false)) {
             referents.add(statement.getEntityId());
         }
         return referents;
     }
 
     @Override
-    public String getFirstSeen() {
+    public long getFirstSeen() {
         long firstSeen = Long.MAX_VALUE;
-        for (Statement statement : getAllStatements()) {
+        for (Statement statement : getAllStatements(false)) {
             firstSeen = Math.min(firstSeen, statement.getFirstSeen());
         }
-        return ModelHelper.toTimeStamp(firstSeen);
+        return firstSeen;
     }
 
     @Override
-    public String getLastSeen() {
+    public long getLastSeen() {
         long lastSeen = 0;
-        for (Statement statement : getAllStatements()) {
-            lastSeen = Math.min(lastSeen, statement.getFirstSeen());
+        for (Statement statement : getAllStatements(false)) {
+            lastSeen = Math.min(lastSeen, statement.getLastSeen());
         }
-        return ModelHelper.toTimeStamp(lastSeen);
+        return lastSeen;
     }
 
     @Override
-    public String getLastChange() {
+    public long getLastChange() {
         long lastChange = 0;
         for (Statement statement : idStatements) {
             lastChange = Math.max(lastChange, statement.getFirstSeen());
         }
-        return ModelHelper.toTimeStamp(lastChange);
+        return lastChange;
     }
 
     public void addStatement(Statement statement) {
@@ -133,7 +135,7 @@ public class StatementEntity extends Entity {
         return properties;
     }
 
-    public Statement computeIdStatement() {
+    public Statement buildIdStatement() {
         List<String> ids = new ArrayList<>();
         for (List<Statement> statements : properties.values()) {
             for (Statement stmt : statements) {
@@ -156,10 +158,10 @@ public class StatementEntity extends Entity {
         }
     }
 
-    public Iterable<Statement> getAllStatements() {
+    public Iterable<Statement> getAllStatements(boolean ensureIdStatement) {
         List<Statement> allStatements = new ArrayList<>(idStatements);
-        if (idStatements.isEmpty()) {
-            Statement idStatement = computeIdStatement();
+        if (ensureIdStatement && idStatements.isEmpty()) {
+            Statement idStatement = buildIdStatement();
             if (idStatement != null) {
                 allStatements.add(idStatement);
             }
@@ -170,8 +172,11 @@ public class StatementEntity extends Entity {
         return allStatements;
     }
 
+    public Iterable<Statement> getAllStatements() {
+        return getAllStatements(true);
+    }
+
     public boolean hasStatements() {
-        // FIXME: Check idProperties?
         return !properties.isEmpty();
     }
 
@@ -179,6 +184,9 @@ public class StatementEntity extends Entity {
         ValueEntity ve = new ValueEntity(id, schema);
         for (Property prop : properties.keySet()) {
             for (Statement stmt : properties.get(prop)) {
+                // if (prop == null) {
+                //     System.out.println("Property is null: " + stmt.getPropertyName() + " (Schema: " + schema.getName() + ")");
+                // }
                 ve.addValue(prop, stmt.getValue());
             }
         }
@@ -191,6 +199,11 @@ public class StatementEntity extends Entity {
         return ve;
     }
 
+    @Override
+    public JsonNode toValueJson() {
+        return toValueEntity().toValueJson();
+    }
+
     public static StatementEntity fromStatements(String canonicalId, List<Statement> statements) {
         if (statements.isEmpty()) {
             throw new IllegalArgumentException("Cannot create entity from empty list of statements.");
@@ -200,12 +213,15 @@ public class StatementEntity extends Entity {
         List<Statement> idStatements = new ArrayList<>();
         for (Statement statement : statements) {
             statement = statement.withCanonicalId(canonicalId);
-            schema = schema.commonWith(statement.getSchema());
             if (statement.getPropertyName().equals(Statement.ID_PROP)) {
                 idStatements.add(statement);
             } else {
+                schema = schema.commonWith(statement.getSchema());
                 Property prop = schema.getProperty(statement.getPropertyName());
-                properties.computeIfAbsent(prop, k -> new ArrayList<>()).add(statement);
+                if (prop != null) {
+                    // TODO: log a warning if the property is not in the schema
+                    properties.computeIfAbsent(prop, k -> new ArrayList<>()).add(statement);
+                }
             }
         }
         return new StatementEntity(canonicalId, schema, properties, idStatements);

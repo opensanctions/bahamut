@@ -1,6 +1,5 @@
 package org.opensanctions.zahir.db;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -123,7 +122,7 @@ public class StoreView {
 
         private void loadNext() throws RocksDBException {
             nextEntity = null;
-            System.out.println("load next");
+            // System.out.println("load next");
             while (prefix == null || iterator.isValid()) { 
                 if (this.prefix == null) {
                     if (remainingDatasets.isEmpty()) {
@@ -132,18 +131,18 @@ public class StoreView {
                     String dataset = remainingDatasets.removeLast();
                     String version = datasets.get(dataset);
                     this.prefix = Key.makePrefix(dataset, version, Store.ENTITY_KEY);
-                    System.out.println("Dataset: " + dataset);
+                    // System.out.println("Dataset: " + dataset);
                     iterator.seek(this.prefix);
                 }
                 byte[] key = iterator.key();
                 iterator.next();
                 
-                try {
-                    System.out.println("Key " + (new String(key, "UTF-8")));
-                } catch (UnsupportedEncodingException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+                // try {
+                //     System.out.println("Key " + (new String(key, "UTF-8")));
+                // } catch (UnsupportedEncodingException e) {
+                //     // TODO Auto-generated catch block
+                //     e.printStackTrace();
+                // }
                 if (!Key.hasPrefix(key, prefix)) {
                     prefix = null;
                     continue;
@@ -152,7 +151,7 @@ public class StoreView {
                 String entityId = keyParts[3];
                 Identifier canonical = linker.getCanonicalIdentifier(entityId);
                 String canonicalId = canonical.toString();
-                System.out.println("Next: " + canonicalId);
+                // System.out.println("Next: " + canonicalId);
                 if (canonical.isCanonical()) {
                     if (seen.contains(canonicalId)) {
                         continue;
@@ -163,7 +162,7 @@ public class StoreView {
                 if (statements.isEmpty()) {
                     continue;
                 }
-                System.out.println("Statements: " + statements);
+                // System.out.println("Statements: " + statements);
                 nextEntity = StatementEntity.fromStatements(statements);
                 break;
             }

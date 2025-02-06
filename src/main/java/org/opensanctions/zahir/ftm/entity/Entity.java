@@ -6,6 +6,8 @@ import java.util.Set;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public abstract class Entity {
     protected String id;
     protected Schema schema;
@@ -43,10 +45,10 @@ public abstract class Entity {
 
     public abstract Set<String> getDatasets();
     public abstract Set<String> getReferents();
-    public abstract String getFirstSeen();
-    public abstract String getLastSeen();
-    public abstract String getLastChange();
+    public abstract long getFirstSeen();
+    public abstract long getLastSeen();
+    public abstract long getLastChange();
 
     public abstract List<String> getValues(Property property);
-    // FIXME: implemnent getLastChange()
+    public abstract JsonNode toValueJson();
 }

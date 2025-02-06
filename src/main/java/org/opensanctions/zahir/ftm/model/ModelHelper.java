@@ -2,6 +2,8 @@ package org.opensanctions.zahir.ftm.model;
 
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,9 +14,11 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class ModelHelper {
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-ddTHH:mm:ss");
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.from(ZoneOffset.UTC));
     
     public static List<String> getJsonStringArray(JsonNode node, String key) {
         List<String> strings = new ArrayList<>();
@@ -50,6 +54,13 @@ public class ModelHelper {
             }
         }
         return strings;
+    }
+
+    public static void putJsonStringIterable(ObjectNode node, String key, Iterable<String> values) {
+        ArrayNode array = node.putArray(key);
+        for (String value : values) {
+            array.add(value);
+        }
     }
     
     public static String hexDigest(MessageDigest md) {

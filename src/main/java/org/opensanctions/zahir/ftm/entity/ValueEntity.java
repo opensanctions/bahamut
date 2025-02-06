@@ -14,14 +14,16 @@ import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class ValueEntity extends Entity {
     
     private Set<String> datasets;
     private Set<String> referents;
-    private String firstSeen;
-    private String lastSeen;
-    private String lastChange;
+    private long firstSeen;
+    private long lastSeen;
+    private long lastChange;
     private final Map<Property, List<String>> properties;
 
     public ValueEntity(String id, Schema schema, Map<Property, List<String>> properties) {
@@ -63,29 +65,29 @@ public class ValueEntity extends Entity {
     }
 
     @Override
-    public String getFirstSeen() {
+    public long getFirstSeen() {
         return firstSeen;
     }
 
-    public void setFirstSeen(String firstSeen) {
+    public void setFirstSeen(long firstSeen) {
         this.firstSeen = firstSeen;
     }
 
     @Override
-    public String getLastSeen() {
+    public long getLastSeen() {
         return lastSeen;
     }
 
-    public void setLastSeen(String lastSeen) {
+    public void setLastSeen(long lastSeen) {
         this.lastSeen = lastSeen;
     }
 
     @Override
-    public String getLastChange() {
+    public long getLastChange() {
         return lastChange;
     }
 
-    public void setLastChange(String lastChange) {
+    public void setLastChange(long lastChange) {
         this.lastChange = lastChange;
     }
 
@@ -110,6 +112,9 @@ public class ValueEntity extends Entity {
     }
 
     public void addValue(Property property, String value) {
+        if (property == null) {
+            return;
+        }
         if (property.isEnum()) {
             value = value.intern();
         }
@@ -120,40 +125,37 @@ public class ValueEntity extends Entity {
         properties.put(property, values);
     }
 
-    // public JsonNode toValueJson() {
-    //     JsonNode node = super.toJson();
-    //     node.put("type", "value");
-    //     node.put("schema", schema.getName());
-    //     if (caption != null) {
-    //         node.put("caption", caption);
-    //     }
-    //     if (!properties.isEmpty()) {
-    //         JsonNode propsNode = node.putObject("properties");
-    //         for (Map.Entry<Property, List<String>> entry : properties.entrySet()) {
-    //             Property property = entry.getKey();
-    //             List<String> values = entry.getValue();
-    //             if (property.isEnum()) {
-    //                 for (int i = 0; i < values.size(); i++) {
-    //                     values.set(i, values.get(i).intern());
-    //                 }
-    //             }
-    //             ModelHelper.setJsonStringArray(propsNode, property.getName(), values);
-    //         }
-    //     }
-    //     if (datasets != null) {
-    //         ModelHelper.setJsonStringSet(node, "datasets", datasets);
-    //     }
-    //     if (referents != null) {
-    //         ModelHelper.setJsonStringSet(node, "referents", referents);
-    //     }
-    //     if (firstSeen != null) {
-    //         node.put("first_seen", firstSeen);
-    //     }
-    //     if (lastSeen != null) {
-    //         node.put("last_seen", lastSeen);
-    //     }
-    //     return node;
-    // }
+    @Override
+    public JsonNode toValueJson() {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode node = mapper.createObjectNode();
+        node.put("type", "value");
+        node.put("schema", schema.getName());
+        node.put("caption", getCaption());
+        if (!properties.isEmpty()) {
+            ObjectNode propsNode = node.putObject("properties");
+            for (Map.Entry<Property, List<String>> entry : properties.entrySet()) {
+                Property property = entry.getKey();
+                ModelHelper.putJsonStringIterable(propsNode, property.getName(), entry.getValue());
+            }
+        }
+        if (datasets != null) {
+            ModelHelper.putJsonStringIterable(node, "datasets", datasets);
+        }
+        if (referents != null) {
+            ModelHelper.putJsonStringIterable(node, "referents", referents);
+        }
+        if (firstSeen > 0) {
+            node.put("first_seen", ModelHelper.toTimeStamp(firstSeen));
+        }
+        if (lastSeen > 0) {
+            node.put("last_seen", ModelHelper.toTimeStamp(lastSeen));
+        }
+        if (lastChange > 0) {
+            node.put("last_change", ModelHelper.toTimeStamp(lastChange));
+        }
+        return node;
+    }
 
     public static ValueEntity fromJson(Model model, JsonNode node) throws SchemaException {
         String entityId = node.get("id").asText();
@@ -188,13 +190,16 @@ public class ValueEntity extends Entity {
         entity.setDatasets(ModelHelper.getJsonStringSet(node, "datasets"));
         entity.setReferents(ModelHelper.getJsonStringSet(node, "referents"));
         if (node.has("first_seen")) {
-            entity.setFirstSeen(node.get("first_seen").asText());
+            long firstSeen = ModelHelper.fromTimeStamp(node.get("first_seen").asText());
+            entity.setFirstSeen(firstSeen);
         }
         if (node.has("last_seen")) {
-            entity.setLastSeen(node.get("last_seen").asText());
+            long lastSeen = ModelHelper.fromTimeStamp(node.get("last_seen").asText());
+            entity.setLastSeen(lastSeen);
         }
         if (node.has("last_change")) {
-            entity.setLastSeen(node.get("last_change").asText());
+            long lastChange = ModelHelper.fromTimeStamp(node.get("last_change").asText());
+            entity.setLastSeen(lastChange);
         }
         return entity;
     }

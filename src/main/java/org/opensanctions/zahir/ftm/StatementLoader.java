@@ -34,7 +34,8 @@ public class StatementLoader {
         CSVFormat format = CSVFormat.DEFAULT.builder().setHeader().get();
         // List<Statement> statements = new ArrayList<>();
         long count = 0;
-        StoreWriter writer = store.getWriter("test", Store.XXX_VERSION);
+        Map<String, StoreWriter> writers = new HashMap<>();
+        // StoreWriter writer = store.getWriter("test", Store.XXX_VERSION);
         System.out.println("Loading statements from " + path);
         try (CSVParser csvParser = new CSVParser(reader, format)) {
             for (CSVRecord record : csvParser) {
@@ -44,20 +45,29 @@ public class StatementLoader {
                     System.err.println("Schema not found: " + record.get("schema"));
                     continue;
                 }
+                String dataset = record.get("dataset");
+                if (!writers.containsKey(dataset)) {
+                    writers.put(dataset, store.getWriter(dataset, Store.XXX_VERSION));
+                }
+                StoreWriter writer = writers.get(dataset);
                 String property = record.get("prop");
                 Instant firstSeen = parseDateTime(record.get("first_seen"));
                 Instant lastSeen = parseDateTime(record.get("last_seen"));
                 boolean external = record.get("external").startsWith("t");
 
                 Statement stmt = new Statement(record.get("id"), record.get("entity_id"), record.get("canonical_id"), schema, property, record.get("dataset"), record.get("value"), record.get("lang"), record.get("original_value"), external, firstSeen.getEpochSecond(), lastSeen.getEpochSecond());
-                System.out.println(stmt.getEntityId());
+                // System.out.println(stmt.getEntityId());
                 writer.writeStatement(stmt);
                 if (count > 0 && count % 100000 == 0) {
                     System.err.println(count);
                 }
             }
             System.err.println("Total: " + count);
-            writer.close();
+            for (StoreWriter writer : writers.values()) {
+                writer.close();
+            }
+            // RocksDB db = store.getDB();
+            // db.comp();
         } catch (Exception e) {
             e.printStackTrace();
         }
