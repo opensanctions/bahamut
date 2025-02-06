@@ -1,7 +1,6 @@
 package org.opensanctions.zahir.ftm;
 
 import java.io.IOException;
-import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,6 +8,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
+import org.opensanctions.zahir.ftm.statement.Statement;
 
 
 public class StatementTest {

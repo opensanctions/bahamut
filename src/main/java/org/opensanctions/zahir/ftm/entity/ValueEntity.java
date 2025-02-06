@@ -21,6 +21,7 @@ public class ValueEntity extends Entity {
     private Set<String> referents;
     private String firstSeen;
     private String lastSeen;
+    private String lastChange;
     private final Map<Property, List<String>> properties;
 
     public ValueEntity(String id, Schema schema, Map<Property, List<String>> properties) {
@@ -77,6 +78,15 @@ public class ValueEntity extends Entity {
 
     public void setLastSeen(String lastSeen) {
         this.lastSeen = lastSeen;
+    }
+
+    @Override
+    public String getLastChange() {
+        return lastChange;
+    }
+
+    public void setLastChange(String lastChange) {
+        this.lastChange = lastChange;
     }
 
     public boolean has(Property property) {
@@ -182,6 +192,9 @@ public class ValueEntity extends Entity {
         }
         if (node.has("last_seen")) {
             entity.setLastSeen(node.get("last_seen").asText());
+        }
+        if (node.has("last_change")) {
+            entity.setLastSeen(node.get("last_change").asText());
         }
         return entity;
     }

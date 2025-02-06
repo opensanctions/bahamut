@@ -1,22 +1,27 @@
 package org.opensanctions.zahir.db;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.opensanctions.zahir.db.proto.StatementValue;
-import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.resolver.Identifier;
 import org.opensanctions.zahir.ftm.resolver.Linker;
+import org.opensanctions.zahir.ftm.statement.Statement;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -64,8 +69,12 @@ public class StoreView {
             byte[] stmtPrefix = Key.makePrefix(dataset, version, Store.STATEMENT_KEY, localId);
             try (var iterator = db.newIterator()) {
                 iterator.seek(stmtPrefix);
-                while (iterator.isValid() && Key.hasPrefix(iterator.key(), stmtPrefix)) {
-                    String[] stmtKey = Key.splitKey(iterator.key());
+                while (iterator.isValid()) {
+                    byte[] itKey = iterator.key();
+                    if (!Key.hasPrefix(itKey, stmtPrefix)) {
+                        break;
+                    }
+                    String[] stmtKey = Key.splitKey(itKey);
                     boolean external = stmtKey[4].equals("x");
                     String stmtId = stmtKey[5];
                     String schemaName = stmtKey[6];
@@ -83,17 +92,10 @@ public class StoreView {
                         // TODO: log to warn.
                         continue;
                     }
-                    
-                    
                     iterator.next();
                 }
-            }
-            
-            
-            
+            }   
         }
-        System.out.println("Values: " + values.size());
-        
         return statements;
     }
 
@@ -105,4 +107,87 @@ public class StoreView {
         return Optional.of(StatementEntity.fromStatements(statements));
     }
 
+    private class EntityIterator implements Iterator<StatementEntity> {
+        private final RocksIterator iterator;
+        private final Set<String> seen;
+        private final LinkedList<String> remainingDatasets;
+        private byte[] prefix;
+        private StatementEntity nextEntity;
+
+        public EntityIterator() throws RocksDBException {
+            this.iterator = store.getDB().newIterator();
+            this.seen = new HashSet<>();
+            this.remainingDatasets = new LinkedList<>(datasets.keySet());
+            loadNext();
+        }
+
+        private void loadNext() throws RocksDBException {
+            nextEntity = null;
+            System.out.println("load next");
+            while (prefix == null || iterator.isValid()) { 
+                if (this.prefix == null) {
+                    if (remainingDatasets.isEmpty()) {
+                        return;
+                    }
+                    String dataset = remainingDatasets.removeLast();
+                    String version = datasets.get(dataset);
+                    this.prefix = Key.makePrefix(dataset, version, Store.ENTITY_KEY);
+                    System.out.println("Dataset: " + dataset);
+                    iterator.seek(this.prefix);
+                }
+                byte[] key = iterator.key();
+                iterator.next();
+                
+                try {
+                    System.out.println("Key " + (new String(key, "UTF-8")));
+                } catch (UnsupportedEncodingException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                if (!Key.hasPrefix(key, prefix)) {
+                    prefix = null;
+                    continue;
+                }
+                String[] keyParts = Key.splitKey(key);
+                String entityId = keyParts[3];
+                Identifier canonical = linker.getCanonicalIdentifier(entityId);
+                String canonicalId = canonical.toString();
+                System.out.println("Next: " + canonicalId);
+                if (canonical.isCanonical()) {
+                    if (seen.contains(canonicalId)) {
+                        continue;
+                    }
+                    seen.add(canonicalId);
+                }
+                List<Statement> statements = getStatements(entityId);
+                if (statements.isEmpty()) {
+                    continue;
+                }
+                System.out.println("Statements: " + statements);
+                nextEntity = StatementEntity.fromStatements(statements);
+                break;
+            }
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return nextEntity != null;
+        }
+        
+        @Override
+        public StatementEntity next() {
+            StatementEntity entity = this.nextEntity;
+            try {
+                loadNext();    
+            } catch (RocksDBException e) {
+                // TODO: log and warn
+                nextEntity = null;
+            }
+            return entity;
+        }
+    }
+
+    public Iterator<StatementEntity> entities() throws RocksDBException {
+        return new EntityIterator();
+    }
 }

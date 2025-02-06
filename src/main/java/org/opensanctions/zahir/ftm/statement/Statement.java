@@ -1,9 +1,12 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.statement;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.opensanctions.zahir.ftm.model.ModelHelper;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 
@@ -112,6 +115,11 @@ public class Statement {
         return id.equals(other.id);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Statement(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", id, entityId, canonicalId, schema, propertyName, dataset, value, lang, originalValue, external, firstSeen, lastSeen);
+    }
+
     public Statement withCanonicalId(String canonicalId) {
         if (canonicalId.equals(getCanonicalId())) {
             return this;
@@ -121,5 +129,29 @@ public class Statement {
 
     public static BigInteger parseId(String id) {
         return new BigInteger(id, 16);
+    }
+
+    public static String makeId(String dataset, String entityId, String propertyName, String value, boolean external) {
+        byte[] sep = new byte[] { '.' };
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            digest.update(dataset.getBytes());
+            digest.update(sep);
+            digest.update(entityId.getBytes());
+            digest.update(sep);
+            digest.update(propertyName.getBytes());
+            digest.update(sep);
+            digest.update(value.getBytes());
+            if (external) {
+                digest.update(".ext".getBytes());
+            }
+            return ModelHelper.hexDigest(digest);
+        } catch (NoSuchAlgorithmException e) {
+            return null;
+        }
+    }
+
+    public static String makeId(String dataset, String entityId, String propertyName, String value) {
+        return makeId(dataset, entityId, propertyName, value, false);
     }
 }

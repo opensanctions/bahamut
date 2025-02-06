@@ -45,6 +45,7 @@ public abstract class Entity {
     public abstract Set<String> getReferents();
     public abstract String getFirstSeen();
     public abstract String getLastSeen();
+    public abstract String getLastChange();
 
     public abstract List<String> getValues(Property property);
     // FIXME: implemnent getLastChange()

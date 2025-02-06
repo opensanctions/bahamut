@@ -97,7 +97,7 @@ public class Schema {
                 return third;
             }
         }
-        throw new IllegalArgumentException("No common schema found!");
+        throw new IllegalArgumentException("No common schema found: " + this.getName() + " and " + other.getName());
     }
 
     public String getName() {

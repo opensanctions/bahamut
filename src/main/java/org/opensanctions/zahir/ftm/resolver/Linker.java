@@ -30,10 +30,14 @@ public class Linker {
         return getConnected(new Identifier(entityId));
     }
 
-    public String getCanonical(String entityId) {
+    public Identifier getCanonicalIdentifier(String entityId) {
         Identifier node = new Identifier(entityId);
         Identifier best = Collections.max(getConnected(node));
-        return best.isCanonical() ? best.id : node.id;
+        return best.isCanonical() ? best : node;
+    }
+
+    public Identifier getCanonical(String entityId) {
+        return getCanonicalIdentifier(entityId);
     }
 
     // public Stream<Identifier> canonicals() {

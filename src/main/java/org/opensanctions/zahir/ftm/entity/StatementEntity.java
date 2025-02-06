@@ -1,5 +1,7 @@
 package org.opensanctions.zahir.ftm.entity;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,9 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.opensanctions.zahir.ftm.Statement;
+import org.opensanctions.zahir.ftm.model.ModelHelper;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
+import org.opensanctions.zahir.ftm.statement.Statement;
 
 public class StatementEntity extends Entity {
     private final Map<Property, List<Statement>> properties;
@@ -62,7 +65,7 @@ public class StatementEntity extends Entity {
         for (Statement statement : getAllStatements()) {
             firstSeen = Math.min(firstSeen, statement.getFirstSeen());
         }
-        return Instant.ofEpochSecond(firstSeen).toString();
+        return ModelHelper.toTimeStamp(firstSeen);
     }
 
     @Override
@@ -71,7 +74,16 @@ public class StatementEntity extends Entity {
         for (Statement statement : getAllStatements()) {
             lastSeen = Math.min(lastSeen, statement.getFirstSeen());
         }
-        return Instant.ofEpochSecond(lastSeen).toString();
+        return ModelHelper.toTimeStamp(lastSeen);
+    }
+
+    @Override
+    public String getLastChange() {
+        long lastChange = 0;
+        for (Statement statement : idStatements) {
+            lastChange = Math.max(lastChange, statement.getFirstSeen());
+        }
+        return ModelHelper.toTimeStamp(lastChange);
     }
 
     public void addStatement(Statement statement) {
@@ -121,8 +133,37 @@ public class StatementEntity extends Entity {
         return properties;
     }
 
+    public Statement computeIdStatement() {
+        List<String> ids = new ArrayList<>();
+        for (List<Statement> statements : properties.values()) {
+            for (Statement stmt : statements) {
+                ids.add(stmt.getId());
+            }
+        }
+        ids.sort(String::compareTo);
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            for (String stmtId : ids) {
+                digest.update(stmtId.getBytes());
+            }
+            String value = ModelHelper.hexDigest(digest);
+            String dataset = getDatasets().iterator().next();
+            String stmtId = Statement.makeId(dataset, id, Statement.ID_PROP, value, false);
+            Instant instant = Instant.now();
+            return new Statement(stmtId, id, id, schema, Statement.ID_PROP, dataset, value, null, null, false, instant.getEpochSecond(), instant.getEpochSecond());
+        } catch (NoSuchAlgorithmException e) {
+            return null;
+        }
+    }
+
     public Iterable<Statement> getAllStatements() {
         List<Statement> allStatements = new ArrayList<>(idStatements);
+        if (idStatements.isEmpty()) {
+            Statement idStatement = computeIdStatement();
+            if (idStatement != null) {
+                allStatements.add(idStatement);
+            }
+        }
         for (List<Statement> statements : properties.values()) {
             allStatements.addAll(statements);
         }
@@ -146,6 +187,7 @@ public class StatementEntity extends Entity {
         ve.setReferents(getReferents());
         ve.setFirstSeen(getFirstSeen());
         ve.setLastSeen(getLastSeen());
+        ve.setLastChange(getLastChange());
         return ve;
     }
 

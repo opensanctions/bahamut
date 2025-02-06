@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
+import org.opensanctions.zahir.ftm.statement.Statement;
 
 public class StatementEntityTest {
     private static Model model;

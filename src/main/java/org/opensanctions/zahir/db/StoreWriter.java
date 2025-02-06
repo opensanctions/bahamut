@@ -5,10 +5,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.opensanctions.zahir.db.proto.StatementValue;
-import org.opensanctions.zahir.ftm.Statement;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
+import org.opensanctions.zahir.ftm.statement.Statement;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
@@ -85,15 +85,16 @@ public class StoreWriter implements AutoCloseable {
             byte[] entityKey = Key.makeKey(dataset, version, Store.ENTITY_KEY, entityId);
             batch.put(entityKey, schemaBytes);
         }
+        entitySchemata.clear();
         store.getDB().write(writeOptions, batch);
         batch.close();
         batch = new WriteBatch();
-        entitySchemata.clear();
     }
 
     @Override
     public void close() throws RocksDBException {
         // flush();
+        batch.close();
         writeOptions.close();
     }
 
