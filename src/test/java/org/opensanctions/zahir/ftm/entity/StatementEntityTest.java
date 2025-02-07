@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opensanctions.zahir.ftm.exceptions.SchemaException;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.statement.Statement;
@@ -25,7 +26,7 @@ public class StatementEntityTest {
     }
     
     @Test
-    public void testEntityFromStatements() {
+    public void testEntityFromStatements() throws SchemaException {
         Schema schema = model.getSchema("Person");
         Statement stmt1 = new Statement("a1", ENTITY_ID, CANONICAL_ID, schema, 
             "name", DATASET, "Harry Smith", "", "", false, 100L, 200L);

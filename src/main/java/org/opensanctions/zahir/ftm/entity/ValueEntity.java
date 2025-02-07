@@ -12,12 +12,15 @@ import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.ModelHelper;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class ValueEntity extends Entity {
+    private final static Logger log = LoggerFactory.getLogger(ValueEntity.class);
     
     private Set<String> datasets;
     private Set<String> referents;
@@ -129,7 +132,9 @@ public class ValueEntity extends Entity {
     public JsonNode toValueJson() {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode node = mapper.createObjectNode();
-        node.put("type", "value");
+        if (this.id != null) {
+            node.put("id", this.id);
+        }
         node.put("schema", schema.getName());
         node.put("caption", getCaption());
         if (!properties.isEmpty()) {
@@ -172,6 +177,7 @@ public class ValueEntity extends Entity {
                 String propertyName = it.next();
                 Property property = schema.getProperty(propertyName);
                 if (property == null) {
+                    log.warn("Invalid property: {} (Entity: {}, Schema: {})", propertyName, entityId, schemaName);
                     continue;
                 }
                 List<String> values = ModelHelper.getJsonStringArray(propsNode, propertyName);

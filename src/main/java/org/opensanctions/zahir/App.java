@@ -23,8 +23,8 @@ public class App {
             Linker linker = Linker.fromJsonPath("/Users/pudo/Code/operations/etl/data/resolve.ijson");
 
             System.out.println("Linker loaded: " + linker.size());
-            StatementLoader.loadStatementsFromCSVPath(model, store, "/Users/pudo/Data/statements.csv");
-            StoreView view = store.getView(linker, List.of("test"));
+            // StatementLoader.loadStatementsFromCSVPath(model, store, "/Users/pudo/Data/statements.csv");
+            StoreView view = store.getView(linker, List.of("us_ofac_sdn", "us_ofac_cons"));
             Iterator<StatementEntity> entities = view.entities();
             long count = 0;
             while (entities.hasNext()) {
@@ -34,7 +34,7 @@ public class App {
                 if (count % 100000 == 0) {
                     System.err.println("Generated JSON: " + count);
                 }
-                // System.out.println(node.toPrettyString());
+                System.out.println(node.toPrettyString());
             }
             // Optional<StatementEntity> entity = view.getEntity("Q7747");
             // if (entity.isPresent()) {

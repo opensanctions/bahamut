@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.opensanctions.zahir.ftm.exceptions.SchemaException;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class Schema {
@@ -82,7 +84,7 @@ public class Schema {
         return getSchemata().contains(schema);
     }
 
-    public Schema commonWith(Schema other) {
+    public Schema commonWith(Schema other) throws SchemaException {
         if (other == this || other == null) {
             return this;
         }
@@ -97,7 +99,7 @@ public class Schema {
                 return third;
             }
         }
-        throw new IllegalArgumentException("No common schema found: " + this.getName() + " and " + other.getName());
+        throw new SchemaException("No common schema found: " + this.getName() + " and " + other.getName());
     }
 
     public String getName() {

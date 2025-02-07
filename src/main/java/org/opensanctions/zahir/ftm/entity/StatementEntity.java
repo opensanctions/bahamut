@@ -10,14 +10,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.opensanctions.zahir.ftm.exceptions.SchemaException;
 import org.opensanctions.zahir.ftm.model.ModelHelper;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.statement.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class StatementEntity extends Entity {
+    private final static Logger log = LoggerFactory.getLogger(StatementEntity.class);
     private final Map<Property, List<Statement>> properties;
     private final List<Statement> idStatements;
 
@@ -74,7 +78,7 @@ public class StatementEntity extends Entity {
     public long getLastSeen() {
         long lastSeen = 0;
         for (Statement statement : getAllStatements(false)) {
-            lastSeen = Math.min(lastSeen, statement.getLastSeen());
+            lastSeen = Math.max(lastSeen, statement.getLastSeen());
         }
         return lastSeen;
     }
@@ -88,7 +92,7 @@ public class StatementEntity extends Entity {
         return lastChange;
     }
 
-    public void addStatement(Statement statement) {
+    public void addStatement(Statement statement) throws SchemaException {
         if (!statement.getCanonicalId().equals(id)) {
             throw new IllegalArgumentException("Statement does not belong to this entity.");
         }
@@ -98,7 +102,8 @@ public class StatementEntity extends Entity {
         }
         String propName = statement.getPropertyName();
         if (propName == null || !schema.hasProperty(propName)) {
-            throw new IllegalArgumentException("Statement property does not exist in schema.");
+            String message = String.format("Statement property %s does not exist in schema %s.", propName, this.schema);
+            throw new SchemaException(message);
         }
         Property prop = schema.getProperty(propName);
         properties.computeIfAbsent(prop, k -> new ArrayList<>()).add(statement);
@@ -184,9 +189,6 @@ public class StatementEntity extends Entity {
         ValueEntity ve = new ValueEntity(id, schema);
         for (Property prop : properties.keySet()) {
             for (Statement stmt : properties.get(prop)) {
-                // if (prop == null) {
-                //     System.out.println("Property is null: " + stmt.getPropertyName() + " (Schema: " + schema.getName() + ")");
-                // }
                 ve.addValue(prop, stmt.getValue());
             }
         }
@@ -204,7 +206,7 @@ public class StatementEntity extends Entity {
         return toValueEntity().toValueJson();
     }
 
-    public static StatementEntity fromStatements(String canonicalId, List<Statement> statements) {
+    public static StatementEntity fromStatements(String canonicalId, List<Statement> statements) throws SchemaException {
         if (statements.isEmpty()) {
             throw new IllegalArgumentException("Cannot create entity from empty list of statements.");
         }
@@ -219,15 +221,16 @@ public class StatementEntity extends Entity {
                 schema = schema.commonWith(statement.getSchema());
                 Property prop = schema.getProperty(statement.getPropertyName());
                 if (prop != null) {
-                    // TODO: log a warning if the property is not in the schema
                     properties.computeIfAbsent(prop, k -> new ArrayList<>()).add(statement);
+                } else {
+                    log.warn("Property {} not found in schema {}", statement.getPropertyName(), schema.getName());
                 }
             }
         }
         return new StatementEntity(canonicalId, schema, properties, idStatements);
     }
 
-    public static StatementEntity fromStatements(List<Statement> statements) {
+    public static StatementEntity fromStatements(List<Statement> statements) throws SchemaException {
         if (statements.isEmpty()) {
             throw new IllegalArgumentException("Cannot create entity from empty list of statements.");
         }

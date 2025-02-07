@@ -6,15 +6,19 @@ import java.util.Optional;
 
 import org.opensanctions.zahir.db.proto.StatementValue;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
+import org.opensanctions.zahir.ftm.exceptions.SchemaException;
 import org.opensanctions.zahir.ftm.model.Property;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.statement.Statement;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StoreWriter implements AutoCloseable {
     private static final int BATCH_SIZE = 100000;
+    private final static Logger log = LoggerFactory.getLogger(StoreWriter.class);
 
     private final Store store;
     private final String dataset;
@@ -40,7 +44,11 @@ public class StoreWriter implements AutoCloseable {
         Schema schema = statement.getSchema();
         Schema existing = entitySchemata.get(entityId);
         if (existing != schema) {
-            this.entitySchemata.put(entityId, schema.commonWith(existing));
+            try {
+                this.entitySchemata.put(entityId, schema.commonWith(existing));    
+            } catch (SchemaException e) {
+                log.warn("Schema mismatch for entity {}: {}", entityId, e.getMessage());
+            }
         }
         
         String external = statement.isExternal() ? "x" : "";

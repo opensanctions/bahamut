@@ -11,8 +11,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.security.auth.kerberos.KeyTab;
+
 import org.opensanctions.zahir.db.proto.StatementValue;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
+import org.opensanctions.zahir.ftm.exceptions.SchemaException;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.resolver.Identifier;
@@ -21,10 +24,14 @@ import org.opensanctions.zahir.ftm.statement.Statement;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
 public class StoreView {
+    private final static Logger log = LoggerFactory.getLogger(StoreView.class);
+
     private final Store store;
     private final Linker linker;
     private final Map<String, String> datasets;
@@ -79,7 +86,7 @@ public class StoreView {
                     String schemaName = stmtKey[6];
                     Schema schema = model.getSchema(schemaName);
                     if (schema == null) {
-                        // TODO: log to warn.
+                        log.warn("Schema not found: {} (Dataset: {}, Entity: {})", schemaName, dataset, localId);
                         continue;
                     }
                     String propertyName = stmtKey[7];
@@ -88,7 +95,7 @@ public class StoreView {
                         Statement stmt = new Statement(stmtId, localId, canonicalId, schema, propertyName, dataset, stmtValue.getValue(), stmtValue.getLang(), stmtValue.getOriginalValue(), external, stmtValue.getFirstSeen(), stmtValue.getLastSeen());
                         statements.add(stmt);
                     } catch (InvalidProtocolBufferException e) {
-                        // TODO: log to warn.
+                        log.warn("Failed to parse statement value: {}", e.getMessage());
                         continue;
                     }
                     iterator.next();
@@ -98,7 +105,7 @@ public class StoreView {
         return statements;
     }
 
-    public Optional<StatementEntity> getEntity(String entityId) throws RocksDBException {
+    public Optional<StatementEntity> getEntity(String entityId) throws RocksDBException, SchemaException {
         List<Statement> statements = getStatements(entityId);
         if (statements.isEmpty()) {
             return Optional.empty();
@@ -117,32 +124,31 @@ public class StoreView {
             this.iterator = store.getDB().newIterator();
             this.seen = new HashSet<>();
             this.remainingDatasets = new LinkedList<>(datasets.keySet());
+            System.out.println("Loading entities for datasets: " + remainingDatasets);
             loadNext();
         }
 
         private void loadNext() throws RocksDBException {
             nextEntity = null;
-            // System.out.println("load next");
-            while (prefix == null || iterator.isValid()) { 
+            while (true) { 
                 if (this.prefix == null) {
                     if (remainingDatasets.isEmpty()) {
                         return;
                     }
                     String dataset = remainingDatasets.removeLast();
                     String version = datasets.get(dataset);
+                    log.warn("Loading entities for dataset: {} (Version: {})", dataset, version);
                     this.prefix = Key.makePrefix(dataset, version, Store.ENTITY_KEY);
-                    // System.out.println("Dataset: " + dataset);
                     iterator.seek(this.prefix);
                 }
+                if (!iterator.isValid()) {
+                    prefix = null;
+                    return;
+                }
                 byte[] key = iterator.key();
+                // System.out.println("XXXX key: " + new String(key));
                 iterator.next();
                 
-                // try {
-                //     System.out.println("Key " + (new String(key, "UTF-8")));
-                // } catch (UnsupportedEncodingException e) {
-                //     // TODO Auto-generated catch block
-                //     e.printStackTrace();
-                // }
                 if (!Key.hasPrefix(key, prefix)) {
                     prefix = null;
                     continue;
@@ -151,7 +157,6 @@ public class StoreView {
                 String entityId = keyParts[3];
                 Identifier canonical = linker.getCanonicalIdentifier(entityId);
                 String canonicalId = canonical.toString();
-                // System.out.println("Next: " + canonicalId);
                 if (canonical.isCanonical()) {
                     if (seen.contains(canonicalId)) {
                         continue;
@@ -160,11 +165,16 @@ public class StoreView {
                 }
                 List<Statement> statements = getStatements(entityId);
                 if (statements.isEmpty()) {
+                    log.info("Entity {} has no statements", entityId);
                     continue;
                 }
-                // System.out.println("Statements: " + statements);
-                nextEntity = StatementEntity.fromStatements(statements);
-                break;
+                try {
+                    System.out.println("XXX entity " + entityId + " stmt " + statements.size());
+                    nextEntity = StatementEntity.fromStatements(statements);
+                    return;    
+                } catch (SchemaException e) {
+                    log.error("Failed to create entity: {} (Entity: {})", e.getMessage(), entityId);
+                }
             }
         }
         
@@ -179,7 +189,7 @@ public class StoreView {
             try {
                 loadNext();    
             } catch (RocksDBException e) {
-                // TODO: log and warn
+                log.error("Failed to load next entity: {}", e.getMessage());
                 nextEntity = null;
             }
             return entity;

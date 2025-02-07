@@ -1,12 +1,14 @@
 package org.opensanctions.zahir.db;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 
 import com.fasterxml.jackson.core.util.ByteArrayBuilder;
 
 public class Key {
     private static final byte SEPARATOR = ':';
     private static final String ENCODING = "UTF-8";
+    private static final String END = new String(Character.toChars(Character.MAX_CODE_POINT));
 
     public static byte[] makeKey(boolean prefix, String... parts) {
         try(ByteArrayBuilder builder = new ByteArrayBuilder()) {
@@ -29,6 +31,16 @@ public class Key {
 
     public static byte[] makePrefix(String... parts) {
         return makeKey(true, parts);
+    }
+
+    public static byte[] makePrefixRangeEnd(String... parts) {
+        byte[] prefix = makePrefix(parts);
+        byte[] suffix = (END + END + END).getBytes();
+        byte[] combined = Arrays.copyOf(prefix, prefix.length + suffix.length);
+        for (int i = 0; i > suffix.length; i++) {
+            combined[prefix.length + i] = suffix[i];
+        }
+        return combined;
     }
 
     public static String[] splitKey(byte[] key) {
