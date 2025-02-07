@@ -50,7 +50,7 @@ public class StatementEntity extends Entity {
     @Override
     public Set<String> getDatasets() {
         Set<String> datasets = new HashSet<>();
-        for (Statement statement : getAllStatements(false)) {
+        for (Statement statement : getAllStatements()) {
             datasets.add(statement.getDatasetName());
         }
         return datasets;
@@ -59,7 +59,7 @@ public class StatementEntity extends Entity {
     @Override
     public Set<String> getReferents() {
         Set<String> referents = new HashSet<>();
-        for (Statement statement : getAllStatements(false)) {
+        for (Statement statement : getAllStatements()) {
             referents.add(statement.getEntityId());
         }
         return referents;
@@ -68,7 +68,7 @@ public class StatementEntity extends Entity {
     @Override
     public long getFirstSeen() {
         long firstSeen = Long.MAX_VALUE;
-        for (Statement statement : getAllStatements(false)) {
+        for (Statement statement : getAllStatements()) {
             firstSeen = Math.min(firstSeen, statement.getFirstSeen());
         }
         return firstSeen;
@@ -77,7 +77,7 @@ public class StatementEntity extends Entity {
     @Override
     public long getLastSeen() {
         long lastSeen = 0;
-        for (Statement statement : getAllStatements(false)) {
+        for (Statement statement : getAllStatements()) {
             lastSeen = Math.max(lastSeen, statement.getLastSeen());
         }
         return lastSeen;
@@ -140,7 +140,7 @@ public class StatementEntity extends Entity {
         return properties;
     }
 
-    public Statement buildIdStatement() {
+    public Statement computeChecksum(boolean external) {
         List<String> ids = new ArrayList<>();
         for (List<Statement> statements : properties.values()) {
             for (Statement stmt : statements) {
@@ -155,30 +155,24 @@ public class StatementEntity extends Entity {
             }
             String value = ModelHelper.hexDigest(digest);
             String dataset = getDatasets().iterator().next();
-            String stmtId = Statement.makeId(dataset, id, Statement.ID_PROP, value, false);
+            String stmtId = Statement.makeId(dataset, id, Statement.ID_PROP, value, external);
             Instant instant = Instant.now();
-            return new Statement(stmtId, id, id, schema, Statement.ID_PROP, dataset, value, null, null, false, instant.getEpochSecond(), instant.getEpochSecond());
+            Statement idStatement = new Statement(stmtId, id, id, schema, Statement.ID_PROP, dataset, value, null, null, false, instant.getEpochSecond(), instant.getEpochSecond());
+            idStatements.clear();
+            idStatements.add(idStatement);
+            return idStatement;
         } catch (NoSuchAlgorithmException e) {
+            log.error("Failed to compute checksum: {}", e.getMessage());
             return null;
         }
     }
 
-    public Iterable<Statement> getAllStatements(boolean ensureIdStatement) {
+    public Iterable<Statement> getAllStatements() {
         List<Statement> allStatements = new ArrayList<>(idStatements);
-        if (ensureIdStatement && idStatements.isEmpty()) {
-            Statement idStatement = buildIdStatement();
-            if (idStatement != null) {
-                allStatements.add(idStatement);
-            }
-        }
         for (List<Statement> statements : properties.values()) {
             allStatements.addAll(statements);
         }
         return allStatements;
-    }
-
-    public Iterable<Statement> getAllStatements() {
-        return getAllStatements(true);
     }
 
     public boolean hasStatements() {

@@ -1,4 +1,4 @@
-package org.opensanctions.zahir.ftm;
+package org.opensanctions.zahir.ftm.statement;
 
 import java.io.IOException;
 
@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
-import org.opensanctions.zahir.ftm.statement.Statement;
 
 
 public class StatementTest {
@@ -45,6 +44,24 @@ public class StatementTest {
         assertFalse(stmt.isExternal());
         assertEquals(100L, stmt.getFirstSeen());
         assertEquals(200L, stmt.getLastSeen());
+    }
+
+    @Test
+    public void testEmptyStrings() {
+        Schema schema = model.getSchema("Person");
+        Statement stmt = new Statement(ID, ENTITY_ID, CANONICAL_ID, schema,
+            PROP_NAME, DATASET, VALUE, null, null, false, 100L, 200L);
+            
+        assertEquals("", stmt.getLang());
+        assertEquals("", stmt.getOriginalValue());
+    }
+
+    @Test
+    public void testIdGeneration() {
+        String id = Statement.makeId("test", "Person", "name", "Harry Test");
+        assertEquals(id, "0b49960871b920f511d5b7c67f66a9501e8b7653");
+        String extId = Statement.makeId("test", "Person", "name", "Harry Test", true);
+        assertEquals(extId, "78ee7cd520aad5117c1e7e8c0daa02d0826f5cc3");
     }
 
     @Test
