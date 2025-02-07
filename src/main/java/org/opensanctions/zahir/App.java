@@ -2,11 +2,9 @@ package org.opensanctions.zahir;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.db.StoreView;
-import org.opensanctions.zahir.ftm.StatementLoader;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.resolver.Linker;
@@ -24,17 +22,17 @@ public class App {
 
             System.out.println("Linker loaded: " + linker.size());
             // StatementLoader.loadStatementsFromCSVPath(model, store, "/Users/pudo/Data/statements.csv");
-            StoreView view = store.getView(linker, List.of("us_ofac_sdn", "us_ofac_cons"));
+            StoreView view = store.getView(linker);
             Iterator<StatementEntity> entities = view.entities();
             long count = 0;
             while (entities.hasNext()) {
                 StatementEntity entity = entities.next();
                 JsonNode node = entity.toValueJson();
                 count++;
-                if (count % 100000 == 0) {
+                if (count % 10000 == 0) {
                     System.err.println("Generated JSON: " + count);
                 }
-                System.out.println(node.toPrettyString());
+                // System.out.println(node.toPrettyString());
             }
             // Optional<StatementEntity> entity = view.getEntity("Q7747");
             // if (entity.isPresent()) {

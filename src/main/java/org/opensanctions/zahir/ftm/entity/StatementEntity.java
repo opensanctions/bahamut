@@ -62,6 +62,7 @@ public class StatementEntity extends Entity {
         for (Statement statement : getAllStatements()) {
             referents.add(statement.getEntityId());
         }
+        referents.remove(id);
         return referents;
     }
 

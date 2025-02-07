@@ -3,7 +3,9 @@ package org.opensanctions.zahir.db;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.opensanctions.zahir.ftm.model.Model;
@@ -67,7 +69,24 @@ public class Store {
         return new StoreWriter(this, dataset, version);
     }
 
-    public StoreView getView(Linker linker, List<String> datasets) {
+    public StoreView getView(Linker linker) throws RocksDBException {
+        return new StoreView(this, linker, getDatasets());
+    }
+
+    public StoreView getView(Linker linker, List<String> datasets) throws RocksDBException {
+        Map<String, String> datasetMap = new HashMap<>();
+        for (String dataset : datasets) {
+            Optional<String> version = getLatestDatasetVersion(dataset);
+            if (version.isEmpty()) {
+                log.warn("No version found for dataset: {}", dataset);
+                continue;
+            }
+            datasetMap.put(dataset, version.get());
+        }
+        return getView(linker, datasetMap);
+    }
+
+    public StoreView getView(Linker linker, Map<String, String> datasets) {
         return new StoreView(this, linker, datasets);
     }
 
@@ -81,6 +100,25 @@ public class Store {
     public void releaseDatasetVersion(String dataset, String version) throws RocksDBException {
         long currentTime = System.currentTimeMillis() / 1000;
         releaseDatasetVersion(dataset, version, currentTime);
+    }
+
+    public Map<String, String> getDatasets() throws RocksDBException {
+        RocksDB db = getDB();
+        byte[] prefix = Key.makePrefix(VERSIONS_KEY);
+        RocksIterator iterator = db.newIterator();
+        iterator.seek(prefix);
+        Map<String, String> datasets = new HashMap<>();
+        while (iterator.isValid()) {
+            byte[] key = iterator.key();
+            if (!Key.hasPrefix(key, prefix)) {
+                break;
+            }
+            String[] parts = Key.splitKey(key);
+            // this should be correct (the latest version) because it's sorted, right?
+            datasets.put(parts[1].intern(), parts[2]);
+            iterator.next();
+        }
+        return datasets;
     }
 
     public List<String> getDatasetVersions(String dataset) throws RocksDBException {

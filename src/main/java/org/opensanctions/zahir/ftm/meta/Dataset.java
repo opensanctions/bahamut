@@ -7,7 +7,7 @@ public class Dataset {
 
     public Dataset(Catalog catalog, String name, String label) {
         this.catalog = catalog;
-        this.name = name;
+        this.name = name.intern();
         this.label = label;
     }
 

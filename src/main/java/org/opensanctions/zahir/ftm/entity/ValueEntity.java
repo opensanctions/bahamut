@@ -2,6 +2,7 @@ package org.opensanctions.zahir.ftm.entity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -147,7 +148,7 @@ public class ValueEntity extends Entity {
         if (datasets != null) {
             ModelHelper.putJsonStringIterable(node, "datasets", datasets);
         }
-        if (referents != null) {
+        if (referents != null && !referents.isEmpty()) {
             ModelHelper.putJsonStringIterable(node, "referents", referents);
         }
         if (firstSeen > 0) {
@@ -193,7 +194,10 @@ public class ValueEntity extends Entity {
         if (node.has("caption")) {
             entity.setCaption(node.get("caption").asText());
         }
-        entity.setDatasets(ModelHelper.getJsonStringSet(node, "datasets"));
+        entity.datasets = new HashSet<>();
+        for (String dataset : ModelHelper.getJsonStringArray(node, "datasets")) {
+            entity.datasets.add(dataset.intern());
+        }
         entity.setReferents(ModelHelper.getJsonStringSet(node, "referents"));
         if (node.has("first_seen")) {
             long firstSeen = ModelHelper.fromTimeStamp(node.get("first_seen").asText());

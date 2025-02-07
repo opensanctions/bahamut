@@ -12,12 +12,16 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.db.StoreWriter;
+import org.opensanctions.zahir.ftm.meta.Version;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.model.Schema;
 import org.opensanctions.zahir.ftm.statement.Statement;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StatementLoader {
+    private final static Logger log = LoggerFactory.getLogger(StatementLoader.class);
     private final static Map<String, Instant> dateCache = new HashMap<>();
 
     protected static Instant parseDateTime(String dateTime) {
@@ -35,8 +39,8 @@ public class StatementLoader {
         // List<Statement> statements = new ArrayList<>();
         long count = 0;
         Map<String, StoreWriter> writers = new HashMap<>();
-        // StoreWriter writer = store.getWriter("test", Store.XXX_VERSION);
-        System.out.println("Loading statements from " + path);
+        String version = Version.create();
+        log.info("Loading statements from {} ({})", path, version);
         try (CSVParser csvParser = new CSVParser(reader, format)) {
             for (CSVRecord record : csvParser) {
                 count++;
@@ -47,7 +51,7 @@ public class StatementLoader {
                 }
                 String dataset = record.get("dataset");
                 if (!writers.containsKey(dataset)) {
-                    writers.put(dataset, store.getWriter(dataset, Store.XXX_VERSION));
+                    writers.put(dataset, store.getWriter(dataset, version));
                 }
                 StoreWriter writer = writers.get(dataset);
                 String property = record.get("prop");
@@ -59,10 +63,10 @@ public class StatementLoader {
                 // System.out.println(stmt.getEntityId());
                 writer.writeStatement(stmt);
                 if (count > 0 && count % 100000 == 0) {
-                    System.err.println(count);
+                    log.info("Loaded {} statements...", count);
                 }
             }
-            System.err.println("Total: " + count);
+            log.info("Loaded {} statements total", count);
             for (StoreWriter writer : writers.values()) {
                 writer.release();
                 writer.close();
@@ -72,6 +76,5 @@ public class StatementLoader {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
     }
 }

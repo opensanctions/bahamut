@@ -2,7 +2,6 @@ package org.opensanctions.zahir.db;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -10,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.security.auth.kerberos.KeyTab;
 
 import org.opensanctions.zahir.db.proto.StatementValue;
 import org.opensanctions.zahir.ftm.entity.StatementEntity;
@@ -36,13 +33,10 @@ public class StoreView {
     private final Linker linker;
     private final Map<String, String> datasets;
 
-    public StoreView(Store store, Linker linker, List<String> datasets) {
+    public StoreView(Store store, Linker linker, Map<String, String> datasets) {
         this.store = store;
         this.linker = linker;
-        this.datasets = new HashMap<>();
-        for (String datasetName : datasets) {
-            this.datasets.put(datasetName, Store.XXX_VERSION);
-        }
+        this.datasets = datasets;
     }
 
     public List<Statement> getStatements(String entityId) throws RocksDBException {
@@ -124,7 +118,6 @@ public class StoreView {
             this.iterator = store.getDB().newIterator();
             this.seen = new HashSet<>();
             this.remainingDatasets = new LinkedList<>(datasets.keySet());
-            System.out.println("Loading entities for datasets: " + remainingDatasets);
             loadNext();
         }
 
@@ -169,7 +162,6 @@ public class StoreView {
                     continue;
                 }
                 try {
-                    System.out.println("XXX entity " + entityId + " stmt " + statements.size());
                     nextEntity = StatementEntity.fromStatements(statements);
                     return;    
                 } catch (SchemaException e) {
