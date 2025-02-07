@@ -64,6 +64,7 @@ public class StatementLoader {
             }
             System.err.println("Total: " + count);
             for (StoreWriter writer : writers.values()) {
+                writer.release();
                 writer.close();
             }
             // RocksDB db = store.getDB();

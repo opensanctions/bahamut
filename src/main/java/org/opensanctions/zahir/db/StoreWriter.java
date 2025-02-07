@@ -84,6 +84,10 @@ public class StoreWriter implements AutoCloseable {
         }
     }
 
+    public void release() throws RocksDBException {
+        store.releaseDatasetVersion(dataset, version);
+    }
+
     public void flush() throws RocksDBException {
         if (batch.count() == 0 && entitySchemata.isEmpty()) {
             return;
