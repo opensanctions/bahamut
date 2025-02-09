@@ -51,7 +51,7 @@ public class Schema {
         }
     }
 
-    protected Model getModel() {
+    public Model getModel() {
         return model;
     }
 

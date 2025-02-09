@@ -141,6 +141,11 @@ public class StatementEntity extends Entity {
         return properties;
     }
 
+    @Override
+    public Set<Property> getDefinedProperties() {
+        return properties.keySet();
+    }
+
     public Statement computeChecksum(boolean external) {
         List<String> ids = new ArrayList<>();
         for (List<Statement> statements : properties.values()) {

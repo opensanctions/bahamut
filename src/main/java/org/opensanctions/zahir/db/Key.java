@@ -16,7 +16,9 @@ public class Key {
                 if (i > 0) {
                     builder.append(SEPARATOR);
                 }
-                builder.write(parts[i].getBytes());
+                byte[] part = parts[i].getBytes();
+                // TODO: check if SEPARATOR in part.
+                builder.write(part);
             }
             if (prefix) {
                 builder.append(SEPARATOR);

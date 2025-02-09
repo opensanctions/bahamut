@@ -1,14 +1,19 @@
 package org.opensanctions.zahir.ftm.meta;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Dataset {
     private final Catalog catalog;
     private final String name;
+    private List<String> children;
     private String label;
 
     public Dataset(Catalog catalog, String name, String label) {
         this.catalog = catalog;
         this.name = name.intern();
         this.label = label;
+        this.children = new ArrayList<>();
     }
 
     public String getName() {

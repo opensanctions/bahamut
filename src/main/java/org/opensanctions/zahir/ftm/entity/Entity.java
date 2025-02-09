@@ -1,9 +1,12 @@
 package org.opensanctions.zahir.ftm.entity;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.opensanctions.zahir.ftm.model.Property;
+import org.opensanctions.zahir.ftm.model.PropertyType;
 import org.opensanctions.zahir.ftm.model.Schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,5 +53,20 @@ public abstract class Entity {
     public abstract long getLastChange();
 
     public abstract List<String> getValues(Property property);
+    public abstract Set<Property> getDefinedProperties();
+
+    public List<String> getTypeValues(PropertyType type, boolean matchable) {
+        Set<String> values = new HashSet<>();
+        for (Property property : getDefinedProperties()) {
+            if (property.getType() == type) {
+                if (matchable && !property.isMatchable()) {
+                    continue;
+                }
+                values.addAll(getValues(property));
+            }
+        }
+        return new ArrayList<>(values);
+    }
+
     public abstract JsonNode toValueJson();
 }

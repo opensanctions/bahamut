@@ -130,6 +130,11 @@ public class ValueEntity extends Entity {
     }
 
     @Override
+    public Set<Property> getDefinedProperties() {
+        return properties.keySet();
+    }
+
+    @Override
     public JsonNode toValueJson() {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode node = mapper.createObjectNode();
