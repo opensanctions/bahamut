@@ -2,6 +2,7 @@ package org.opensanctions.zahir.ftm.meta;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class Catalog {
     private final Map<String, Dataset> datasets;
@@ -10,8 +11,8 @@ public class Catalog {
         this.datasets = new HashMap<>();        
     }
 
-    public Dataset getDataset(String name) {
-        return datasets.get(name);
+    public Optional<Dataset> getDataset(String name) {
+        return Optional.ofNullable(datasets.get(name));
     }
 
     public void addDataset(Dataset dataset) {
