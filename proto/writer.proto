@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package org.opensanctions.zahir.server.proto.v1;
+
+import "data.proto";
+
+option java_package = "org.opensanctions.zahir.server.proto.v1";
+option java_multiple_files = true;
+
+service WriterService {
+  rpc WriteDataset(stream WriteCommand) returns (WriteDatasetResponse) {}
+}
+
+message WriteCommand {
+    DatasetSpec dataset = 1;
+    StatementMessage statement = 2;
+}
+
+message WriteDatasetResponse {
+  int64 entities_written = 1;
+}

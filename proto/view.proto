@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package org.opensanctions.zahir.server.proto.v1;
+
+import "data.proto";
+
+option java_package = "org.opensanctions.zahir.server.proto.v1";
+option java_multiple_files = true;
+
+service ViewService {
+  rpc GetEntity(EntityRequest) returns (EntityResponse) {}
+}
+
+message EntityRequest {
+    string session_id = 1;
+    string entity_id = 2;
+}
+
+message EntityResponse {
+    Entity entity = 1;
+}
