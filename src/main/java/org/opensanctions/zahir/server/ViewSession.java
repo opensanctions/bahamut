@@ -1,15 +1,20 @@
 package org.opensanctions.zahir.server;
 
+import java.util.Map;
 import java.util.UUID;
 
+import org.opensanctions.zahir.db.Store;
+import org.opensanctions.zahir.db.StoreView;
 import org.opensanctions.zahir.ftm.resolver.Linker;
 
-public class Session {
+public class ViewSession {
     private final ZahirManager manager;
     private final String id;
+    private final Map<String, String> scope;
 
-    public Session(ZahirManager manager) {
+    public ViewSession(ZahirManager manager, Map<String, String> scope) {
         this.manager = manager;
+        this.scope = scope;
         this.id = UUID.randomUUID().toString().replace("-", "");
     }
 
@@ -19,6 +24,11 @@ public class Session {
 
     public Linker getLinker() {
         return manager.linker;
+    }
+
+    public StoreView getStoreView() {
+        Store store = manager.getStore();
+        return store.getView(getLinker(), scope);
     }
 
 

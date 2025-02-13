@@ -4,6 +4,7 @@ package org.opensanctions.zahir.server.proto.v1;
 
 option java_multiple_files = true;
 option java_package = "org.opensanctions.zahir.server.proto.v1";
+option py_generic_services =false;
 // option java_outer_classname = "SessionProto";
 
 message DatasetSpec {

@@ -66,6 +66,9 @@ public class Model {
     public static Model loadDefault() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         InputStream stream = Model.class.getResourceAsStream("/model.json");
+        if (stream == null) {
+            throw new IOException("Cannot find model.json");
+        }
         JsonNode root = mapper.readTree(stream);
         Model model = Model.fromJson(mapper, root.get("model"));
         return model;

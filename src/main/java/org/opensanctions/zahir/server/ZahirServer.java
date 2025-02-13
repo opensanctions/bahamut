@@ -20,7 +20,7 @@ public class ZahirServer {
         this.port = port;
         this.manager = new ZahirManager();
         this.server = ServerBuilder.forPort(port)
-                .addService(new SessionServiceImpl(manager))
+                .addService(new ViewServiceImpl(manager))
                 .build();
     }
 

@@ -1,6 +1,8 @@
 package org.opensanctions.zahir.server;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,14 +17,15 @@ public class ZahirManager {
     private final Model model;
     private final Store store;
 
-    private Map<String, Session> sessions = new HashMap<>();
+    private Map<String, ViewSession> sessions = new HashMap<>();
 
-    // TODO: linker instances should be session-scoped and managed by the server
+    // TODO: linker instances should be view session-scoped and managed by the server
     protected final Linker linker;
 
     public ZahirManager() throws IOException{
         this.model = Model.loadDefault();
-        this.store = new Store(model, "/Users/pudo/Code/zahir/data/exp1");
+        Path cwd = Paths.get("").toAbsolutePath();
+        this.store = new Store(model, cwd.resolve("data/db").toString());
         this.linker = Linker.fromJsonPath("/Users/pudo/Code/operations/etl/data/resolve.ijson");
         this.sessions = new HashMap<>();
     }
@@ -35,13 +38,13 @@ public class ZahirManager {
         return model;
     }
 
-    public Session createSession() {
-        Session session = new Session(this);
+    public ViewSession createSession(Map<String, String> scope) {
+        ViewSession session = new ViewSession(this, scope);
         sessions.put(session.getId(), session);
         return session;
     }
 
-    public Session closeSession(String id) {
+    public ViewSession closeSession(String id) {
         return sessions.remove(id);
     }
 }

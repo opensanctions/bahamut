@@ -1,7 +1,8 @@
 import grpc
 from urllib.parse import urlparse
 
-from zahirclient.proto import session_pb2_grpc, writer_pb2_grpc
+from zahirclient.proto import view_pb2_grpc
+from zahirclient.proto import writer_pb2_grpc
 
 
 class ZahirClient(object):
@@ -11,5 +12,5 @@ class ZahirClient(object):
         self.host = parsed.hostname
         self.port = parsed.port or "6674"
         self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
-        self.session_service = session_pb2_grpc.SessionServiceStub(self.channel)
+        self.view_service = view_pb2_grpc.ViewServiceStub(self.channel)
         self.writer_service = writer_pb2_grpc.WriterServiceStub(self.channel)

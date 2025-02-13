@@ -41,6 +41,7 @@ dev = [
     "ruff>=0.4.0,<1.0.0",
     "pytest-cov",
     "grpcio-tools >= 1.70.0",
+    "protoletariat",
     "coverage>=4.1",
     "types-setuptools",
 ]
