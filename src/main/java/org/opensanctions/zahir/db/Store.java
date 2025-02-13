@@ -54,6 +54,10 @@ public class Store {
         rocksDB = RocksDB.open(options, path);
     }
 
+    public String getPath() {
+        return path;
+    }
+
     protected RocksDB getDB() throws RocksDBException {
         if (rocksDB == null) {
             initDB();

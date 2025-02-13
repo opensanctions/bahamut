@@ -26,6 +26,7 @@ public class ZahirManager {
         this.model = Model.loadDefault();
         Path cwd = Paths.get("").toAbsolutePath();
         this.store = new Store(model, cwd.resolve("data/db").toString());
+        log.info("Store initialized at: {}", store.getPath());
         this.linker = Linker.fromJsonPath("/Users/pudo/Code/operations/etl/data/resolve.ijson");
         this.sessions = new HashMap<>();
     }
@@ -42,6 +43,10 @@ public class ZahirManager {
         ViewSession session = new ViewSession(this, scope);
         sessions.put(session.getId(), session);
         return session;
+    }
+
+    public ViewSession getSession(String id) {
+        return sessions.get(id);
     }
 
     public ViewSession closeSession(String id) {

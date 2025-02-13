@@ -2,19 +2,27 @@ syntax = "proto3";
 
 package org.opensanctions.zahir.server.proto.v1;
 
-import "data.proto";
-
 option java_package = "org.opensanctions.zahir.server.proto.v1";
 option java_multiple_files = true;
 option py_generic_services = false;
 
 service WriterService {
-  rpc WriteDataset(stream WriteCommand) returns (WriteDatasetResponse) {}
+  rpc WriteDataset(stream WriteStatement) returns (WriteDatasetResponse) {}
 }
-
-message WriteCommand {
-    DatasetSpec dataset = 1;
-    StatementMessage statement = 2;
+  
+message WriteStatement {
+  optional string id = 1;
+  string entity_id = 2;
+  string schema = 4;
+  string property = 5;
+  optional string dataset = 6;
+  optional string version = 7;
+  string value = 8;
+  optional string lang = 9;
+  optional string originalValue = 10;
+  optional bool external = 11;
+  int64 first_seen = 12;
+  int64 last_seen = 13;
 }
 
 message WriteDatasetResponse {

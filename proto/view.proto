@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package org.opensanctions.zahir.server.proto.v1;
 
-import "data.proto";
-
 option java_package = "org.opensanctions.zahir.server.proto.v1";
 option java_multiple_files = true;
 option py_generic_services = false;
@@ -15,7 +13,32 @@ service ViewService {
   rpc CreateView(CreateViewRequest) returns (CreateViewResponse) {}
   rpc CloseView(CloseViewRequest) returns (CloseViewResponse) {}
   rpc GetEntity(EntityRequest) returns (EntityResponse) {}
-  rpc GetEntities(EntityStreamRequest) returns (stream EntityResponse) {}
+  rpc GetEntities(EntityStreamRequest) returns (stream ViewEntity) {}
+}
+
+message DatasetSpec {
+  string name = 1;
+  string version = 2;
+}
+
+message ViewStatement {
+  string id = 1;
+  string entity_id = 2;
+  string schema = 4;
+  string property = 5;
+  optional string dataset = 6;
+  string value = 7;
+  optional string lang = 8;
+  optional string originalValue = 9;
+  bool external = 10;
+  int64 first_seen = 11;
+  int64 last_seen = 12;
+}
+
+message ViewEntity {
+  string id = 1;
+  string caption = 2;
+  repeated ViewStatement statements = 3;
 }
 
 message GetDatasetsRequest {
@@ -59,5 +82,5 @@ message EntityStreamRequest {
 }
 
 message EntityResponse {
-    Entity entity = 1;
+  optional ViewEntity entity = 1;
 }

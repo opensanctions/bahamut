@@ -41,7 +41,7 @@ public class StatementLoader {
         Map<String, StoreWriter> writers = new HashMap<>();
         String version = Version.create();
         log.info("Loading statements from {} ({})", path, version);
-        try (CSVParser csvParser = new CSVParser(reader, format)) {
+        try (CSVParser csvParser = format.parse(reader)) {
             for (CSVRecord record : csvParser) {
                 count++;
                 Schema schema = model.getSchema(record.get("schema"));
@@ -74,7 +74,7 @@ public class StatementLoader {
             // RocksDB db = store.getDB();
             // db.comp();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error loading statements:", e);
         }
     }
 }
