@@ -1,12 +1,21 @@
-from typing import List
+from typing import Dict, Iterable, List
+import logging
 import grpc
 from urllib.parse import urlparse
 
 from nomenklatura.statement import Statement
 
 from zahirclient.proto import view_pb2_grpc
+from zahirclient.proto.view_pb2 import GetDatasetsRequest, GetDatasetVersionsRequest
 from zahirclient.proto import writer_pb2_grpc
-from zahirclient.proto.writer_pb2 import WriteStatement, WriteDatasetResponse
+from zahirclient.proto.writer_pb2 import (
+    WriteStatement,
+    ReleaseDatasetRequest,
+    DeleteDatasetRequest,
+)
+from zahirclient.util import datetime_ts
+
+log = logging.getLogger(__name__)
 
 
 class ZahirClient(object):
@@ -19,14 +28,48 @@ class ZahirClient(object):
         self.view_service = view_pb2_grpc.ViewServiceStub(self.channel)
         self.writer_service = writer_pb2_grpc.WriterServiceStub(self.channel)
 
-    def write_statements(self, dataset: str, version: str, statements: List[Statement]):
+    def get_datasets(self) -> Dict[str, str]:
+        resp = self.view_service.GetDatasets(GetDatasetsRequest())
+        versions: Dict[str, str] = {}
+        for dataset in resp.datasets:
+            versions[dataset.name] = dataset.version
+        return versions
+
+    def get_dataset_versions(self, dataset: str) -> List[str]:
+        resp = self.view_service.GetDatasetVersions(
+            GetDatasetVersionsRequest(dataset=dataset)
+        )
+        return resp.versions
+
+    def write_statements(self, version: str, statements: Iterable[Statement]):
         def generate():
-            for stmt in statements:
-                yield WriteStatement(
-                    id=stmt.id,
-                    dataset=dataset,
-                    version=version,
-                )
-                yield statement.to_pb()
+            try:
+                for stmt in statements:
+                    yield WriteStatement(
+                        id=stmt.id,
+                        entity_id=stmt.entity_id,
+                        schema=stmt.schema,
+                        property=stmt.prop,
+                        dataset=stmt.dataset,
+                        value=stmt.value,
+                        lang=stmt.lang,
+                        originalValue=stmt.original_value,
+                        external=stmt.external,
+                        first_seen=datetime_ts(stmt.first_seen),
+                        last_seen=datetime_ts(stmt.last_seen),
+                        version=version,
+                    )
+            except Exception:
+                log.exception("Error while writing statements!")
 
         self.writer_service.WriteDataset(generate())
+
+    def release_dataset(self, dataset: str, version: str):
+        self.writer_service.ReleaseDataset(
+            ReleaseDatasetRequest(dataset=dataset, version=version)
+        )
+
+    def delete_dataset_version(self, dataset: str, version: str):
+        self.writer_service.DeleteDatasetVersion(
+            DeleteDatasetRequest(dataset=dataset, version=version)
+        )

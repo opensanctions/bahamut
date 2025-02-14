@@ -97,22 +97,35 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
                 return;
             }
         }
-        ViewSession session = manager.createSession(scope);
-        log.info("New client session: {}", session.getId());
-        CreateViewResponse response = CreateViewResponse.newBuilder()
-            .setViewId(session.getId())
-            .build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        try {
+            ViewSession session = manager.createSession(scope);
+            log.info("New client session: {}", session.getId());
+            CreateViewResponse response = CreateViewResponse.newBuilder()
+                .setViewId(session.getId())
+                .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (RocksDBException e) {
+            log.error("Cannot create new session", e);
+            responseObserver.onError(e);
+            responseObserver.onCompleted();
+        }
     }
 
     @Override
     public void closeView(CloseViewRequest request, StreamObserver<CloseViewResponse> responseObserver) {
-        CloseViewResponse response = CloseViewResponse.newBuilder()
-            .setSuccess(true)
-            .build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        try {
+            manager.closeSession(request.getViewId());
+            CloseViewResponse response = CloseViewResponse.newBuilder()
+                .setSuccess(true)
+                .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (RocksDBException e) {   
+            log.error("Cannot close session", e);
+            responseObserver.onError(e);
+            responseObserver.onCompleted();
+        }
     }
 
     private ViewEntity buildViewEntity(StatementEntity entity) {

@@ -5,10 +5,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.resolver.Linker;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +33,7 @@ public class ZahirManager {
         this.sessions = new HashMap<>();
     }
 
-    public Store getStore() {
+    protected Store getStore() {
         return store;
     }
 
@@ -39,7 +41,7 @@ public class ZahirManager {
         return model;
     }
 
-    public ViewSession createSession(Map<String, String> scope) {
+    public ViewSession createSession(Map<String, String> scope) throws RocksDBException{
         ViewSession session = new ViewSession(this, scope);
         sessions.put(session.getId(), session);
         return session;
@@ -49,7 +51,22 @@ public class ZahirManager {
         return sessions.get(id);
     }
 
-    public ViewSession closeSession(String id) {
-        return sessions.remove(id);
+    public Optional<ViewSession> closeSession(String id) throws RocksDBException {
+        ViewSession session = sessions.remove(id);
+        if (session != null) {
+            session.close();
+        }
+        return Optional.ofNullable(session);
+    }
+
+    public void shutdown() {
+        for (ViewSession session : sessions.values()) {
+            try {
+                session.close();
+            } catch (RocksDBException e) {
+                log.error("Failed to close session: {}", e.getMessage());
+            }
+        }
+        store.close();
     }
 }

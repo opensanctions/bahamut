@@ -3,6 +3,7 @@ package org.opensanctions.zahir.server;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.opensanctions.zahir.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +17,12 @@ public class ZahirServer {
     private final Server server;
     private final ZahirManager manager;
 
-    public ZahirServer(int port) throws IOException {
-        this.port = port;
+    public ZahirServer() throws IOException {
+        this.port = Config.PORT;
         this.manager = new ZahirManager();
         this.server = ServerBuilder.forPort(port)
                 .addService(new ViewServiceImpl(manager))
+                .addService(new WriterServiceImpl(manager))
                 .build();
     }
 
@@ -43,8 +45,9 @@ public class ZahirServer {
 
     public void stop() throws InterruptedException {
         if (server != null) {
-            server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
+            server.shutdown().awaitTermination(10, TimeUnit.SECONDS);
         }
+        this.manager.shutdown();
     }
 
     public void blockUntilShutdown() throws InterruptedException {

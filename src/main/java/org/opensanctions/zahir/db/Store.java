@@ -24,8 +24,7 @@ public class Store {
     protected static final String ENTITY_KEY = "e";
     protected static final String INVERTED_KEY = "i";
     protected static final String VERSIONS_KEY = "sys.versions";
-
-    public static final String XXX_VERSION = "xxx";
+    protected static final String LOCKS_KEY = "sys.locks";
 
     private final String path;
     private final Model model;
@@ -69,7 +68,11 @@ public class Store {
         return model;
     }
 
-    public StoreWriter getWriter(String dataset, String version) {
+    public StoreLock getLock() {
+        return new StoreLock(this);
+    }
+
+    public StoreWriter getWriter(String dataset, String version) throws RocksDBException {
         return new StoreWriter(this, dataset, version);
     }
 
@@ -97,7 +100,10 @@ public class Store {
     public void releaseDatasetVersion(String dataset, String version, long timestamp) throws RocksDBException {
         RocksDB db = getDB();
         byte[] key = Key.makeKey(VERSIONS_KEY, dataset, version);
-        db.put(key, Long.toString(timestamp).getBytes());
+        db.put(key, CoreUtil.getTimestampValue());
+        byte[] startPrefix = Key.makePrefix(dataset, version);
+        byte[] endPrefix = Key.makePrefixRangeEnd(dataset, version);
+        db.compactRange(startPrefix, endPrefix);
         log.info("Released dataset version [{}]: {}", dataset, version);
     }
     
@@ -151,14 +157,21 @@ public class Store {
         return Optional.of(Collections.max(versions));
     }
 
-    public void deleteDatasetVersion(String dataset, String version) throws RocksDBException {
+    public boolean deleteDatasetVersion(String dataset, String version) throws RocksDBException {
+        StoreLock lock = getLock();
+        if (lock.isLocked(dataset, version)) {
+            log.warn("Dataset version [{}]: {} is locked, cannot delete", dataset, version);
+            return false;
+        }
         log.info("Deleting dataset version [{}]: {}", dataset, version);
+        lock.releaseAll(dataset, version);
         RocksDB db = getDB();
         byte[] startPrefix = Key.makePrefix(dataset, version);
         byte[] endPrefix = Key.makePrefixRangeEnd(dataset, version);
         db.deleteRange(startPrefix, endPrefix);
         byte[] versionKey = Key.makeKey(VERSIONS_KEY, dataset, version);
         db.delete(versionKey);
+        return true;
     }
 
     public void close() {

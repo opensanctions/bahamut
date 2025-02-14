@@ -23,17 +23,20 @@ public class StoreWriter implements AutoCloseable {
     private final Store store;
     private final String dataset;
     private final String version;
+    private final String lockId;
     private WriteBatch batch;
     private final WriteOptions writeOptions;
     private final Map<String, Schema> entitySchemata;
     
-    public StoreWriter(Store store, String dataset, String version) {
+    public StoreWriter(Store store, String dataset, String version) throws RocksDBException{
         this.store = store;
         this.dataset = dataset;
         this.version = version;
         this.batch = new WriteBatch();
         this.writeOptions = new WriteOptions();
         this.entitySchemata = new HashMap<>();
+        this.lockId = CoreUtil.makeRandomId();
+        store.getLock().acquire(dataset, version, this.lockId);
     }
 
     public void writeStatement(Statement statement) throws RocksDBException {
@@ -84,10 +87,6 @@ public class StoreWriter implements AutoCloseable {
         }
     }
 
-    public void release() throws RocksDBException {
-        store.releaseDatasetVersion(dataset, version);
-    }
-
     public void flush() throws RocksDBException {
         if (batch.count() == 0 && entitySchemata.isEmpty()) {
             return;
@@ -108,6 +107,6 @@ public class StoreWriter implements AutoCloseable {
         // flush();
         batch.close();
         writeOptions.close();
+        store.getLock().release(dataset, version, lockId);
     }
-
 }

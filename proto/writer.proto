@@ -8,6 +8,8 @@ option py_generic_services = false;
 
 service WriterService {
   rpc WriteDataset(stream WriteStatement) returns (WriteDatasetResponse) {}
+  rpc ReleaseDataset(ReleaseDatasetRequest) returns (ReleaseDatasetResponse) {}
+  rpc DeleteDatasetVersion(DeleteDatasetRequest) returns (DeleteDatasetResponse) {}
 }
   
 message WriteStatement {
@@ -27,4 +29,20 @@ message WriteStatement {
 
 message WriteDatasetResponse {
   int64 entities_written = 1;
+}
+
+message ReleaseDatasetRequest {
+  string dataset = 1;
+  string version = 2;
+}
+
+message ReleaseDatasetResponse {}
+
+message DeleteDatasetRequest {
+  string dataset = 1;
+  string version = 2;
+}
+
+message DeleteDatasetResponse {
+  bool success = 1;
 }

@@ -32,11 +32,32 @@ public class StoreView {
     private final Store store;
     private final Linker linker;
     private final Map<String, String> datasets;
+    private String lockId;
 
     public StoreView(Store store, Linker linker, Map<String, String> datasets) {
         this.store = store;
         this.linker = linker;
         this.datasets = datasets;
+    }
+
+    public String lockScope() throws RocksDBException {
+        lockId = CoreUtil.makeRandomId();
+        for (String dataset : datasets.keySet()) {
+            String version = datasets.get(dataset);
+            store.getLock().acquire(dataset, version, lockId);
+        }
+        return lockId;
+    }
+
+    public void resumeLock(String lockId) {
+        this.lockId = lockId;
+    }
+
+    public void releaseScopeLock() throws RocksDBException {
+        for (String dataset : datasets.keySet()) {
+            String version = datasets.get(dataset);
+            store.getLock().release(dataset, version, lockId);
+        }
     }
 
     public List<Statement> getStatements(String entityId) throws RocksDBException {

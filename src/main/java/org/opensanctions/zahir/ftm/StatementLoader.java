@@ -67,9 +67,9 @@ public class StatementLoader {
                 }
             }
             log.info("Loaded {} statements total", count);
-            for (StoreWriter writer : writers.values()) {
-                writer.release();
-                writer.close();
+            for (Map.Entry<String, StoreWriter> entry : writers.entrySet()) {
+                entry.getValue().close();
+                store.releaseDatasetVersion(entry.getKey(), version);
             }
             // RocksDB db = store.getDB();
             // db.comp();
