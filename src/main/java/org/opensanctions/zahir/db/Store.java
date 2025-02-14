@@ -23,6 +23,7 @@ public class Store {
     protected static final String STATEMENT_KEY = "s";
     protected static final String ENTITY_KEY = "e";
     protected static final String INVERTED_KEY = "i";
+    protected static final String DATA_KEY = "d";
     protected static final String VERSIONS_KEY = "sys.versions";
     protected static final String LOCKS_KEY = "sys.locks";
 
@@ -97,7 +98,7 @@ public class Store {
         return new StoreView(this, linker, datasets);
     }
 
-    public void releaseDatasetVersion(String dataset, String version, long timestamp) throws RocksDBException {
+    public void releaseDatasetVersion(String dataset, String version) throws RocksDBException {
         RocksDB db = getDB();
         byte[] key = Key.makeKey(VERSIONS_KEY, dataset, version);
         db.put(key, CoreUtil.getTimestampValue());
@@ -105,11 +106,6 @@ public class Store {
         byte[] endPrefix = Key.makePrefixRangeEnd(dataset, version);
         db.compactRange(startPrefix, endPrefix);
         log.info("Released dataset version [{}]: {}", dataset, version);
-    }
-    
-    public void releaseDatasetVersion(String dataset, String version) throws RocksDBException {
-        long currentTime = System.currentTimeMillis() / 1000;
-        releaseDatasetVersion(dataset, version, currentTime);
     }
 
     public Map<String, String> getDatasets() throws RocksDBException {

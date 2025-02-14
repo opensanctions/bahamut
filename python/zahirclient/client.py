@@ -64,12 +64,13 @@ class ZahirClient(object):
 
         self.writer_service.WriteDataset(generate())
 
-    def release_dataset(self, dataset: str, version: str):
+    def release_dataset(self, dataset: str, version: str) -> None:
         self.writer_service.ReleaseDataset(
             ReleaseDatasetRequest(dataset=dataset, version=version)
         )
 
-    def delete_dataset_version(self, dataset: str, version: str):
-        self.writer_service.DeleteDatasetVersion(
+    def delete_dataset_version(self, dataset: str, version: str) -> bool:
+        resp = self.writer_service.DeleteDatasetVersion(
             DeleteDatasetRequest(dataset=dataset, version=version)
         )
+        return resp.success

@@ -55,7 +55,7 @@ public class StoreWriter implements AutoCloseable {
         }
         
         String external = statement.isExternal() ? "x" : "";
-        byte[] statementKey = Key.makeKey(dataset, version, Store.STATEMENT_KEY, entityId, external, statement.getId(), statement.getSchema().getName(), statement.getPropertyName());
+        byte[] statementKey = Key.makeKey(Store.DATA_KEY, dataset, version, Store.STATEMENT_KEY, entityId, external, statement.getId(), statement.getSchema().getName(), statement.getPropertyName());
 
         StatementValue stmtValue = StatementValue.newBuilder()
             .setValue(statement.getValue())
@@ -71,7 +71,7 @@ public class StoreWriter implements AutoCloseable {
             Property prop = property.get();
             if (prop.getType().isEntity()) {
                 String value = statement.getValue();
-                byte[] invKey = Key.makeKey(dataset, version, Store.INVERTED_KEY, value, entityId);
+                byte[] invKey = Key.makeKey(Store.DATA_KEY, dataset, version, Store.INVERTED_KEY, value, entityId);
                 batch.put(invKey, prop.getName().getBytes());
             }
         }
@@ -93,7 +93,7 @@ public class StoreWriter implements AutoCloseable {
         }
         for (String entityId : entitySchemata.keySet()) {
             byte[] schemaBytes = entitySchemata.get(entityId).getName().getBytes();
-            byte[] entityKey = Key.makeKey(dataset, version, Store.ENTITY_KEY, entityId);
+            byte[] entityKey = Key.makeKey(Store.DATA_KEY, dataset, version, Store.ENTITY_KEY, entityId);
             batch.put(entityKey, schemaBytes);
         }
         entitySchemata.clear();
@@ -108,5 +108,6 @@ public class StoreWriter implements AutoCloseable {
         batch.close();
         writeOptions.close();
         store.getLock().release(dataset, version, lockId);
+        log.info("Closed writer for dataset [{}]: {} ({})", dataset, version, lockId);
     }
 }

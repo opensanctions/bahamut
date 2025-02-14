@@ -68,7 +68,7 @@ public class StoreView {
         for (String dataset : datasets.keySet()) {
             String version = datasets.get(dataset);
             for (Identifier identifier : connected) {
-                byte[] key = Key.makeKey(dataset, version, Store.ENTITY_KEY, identifier.toString());
+                byte[] key = Key.makeKey(Store.DATA_KEY, dataset, version, Store.ENTITY_KEY, identifier.toString());
                 keys.add(key);
             }
         }
@@ -87,7 +87,7 @@ public class StoreView {
             String version = key[1];
             String localId = key[3];
 
-            byte[] stmtPrefix = Key.makePrefix(dataset, version, Store.STATEMENT_KEY, localId);
+            byte[] stmtPrefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.STATEMENT_KEY, localId);
             try (var iterator = db.newIterator()) {
                 iterator.seek(stmtPrefix);
                 while (iterator.isValid()) {
@@ -152,7 +152,7 @@ public class StoreView {
                     String dataset = remainingDatasets.removeLast();
                     String version = datasets.get(dataset);
                     log.warn("Loading entities for dataset: {} (Version: {})", dataset, version);
-                    this.prefix = Key.makePrefix(dataset, version, Store.ENTITY_KEY);
+                    this.prefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.ENTITY_KEY);
                     iterator.seek(this.prefix);
                 }
                 if (!iterator.isValid()) {

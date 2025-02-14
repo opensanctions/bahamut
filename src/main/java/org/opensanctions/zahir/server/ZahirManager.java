@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.opensanctions.zahir.Config;
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.ftm.model.Model;
 import org.opensanctions.zahir.ftm.resolver.Linker;
@@ -26,8 +27,8 @@ public class ZahirManager {
 
     public ZahirManager() throws IOException{
         this.model = Model.loadDefault();
-        Path cwd = Paths.get("").toAbsolutePath();
-        this.store = new Store(model, cwd.resolve("data/db").toString());
+        Path dataPath = Paths.get("").toAbsolutePath().resolve(Config.DATA_PATH);
+        this.store = new Store(model, dataPath.toString());
         log.info("Store initialized at: {}", store.getPath());
         this.linker = Linker.fromJsonPath("/Users/pudo/Code/operations/etl/data/resolve.ijson");
         this.sessions = new HashMap<>();
@@ -68,5 +69,6 @@ public class ZahirManager {
             }
         }
         store.close();
+        log.info("ZahirManager was shut down.");
     }
 }
