@@ -101,6 +101,11 @@
             <artifactId>javax.annotation-api</artifactId>
             <version>1.3.2</version>
         </dependency>
+        <dependency>
+            <groupId>tech.followthemoney</groupId>
+            <artifactId>followthemoney</artifactId>
+            <version>3.8.0</version>
+        </dependency>
     </dependencies>
 
     <build>
