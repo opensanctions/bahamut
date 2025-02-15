@@ -5,16 +5,16 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.opensanctions.zahir.db.proto.StatementValue;
-import org.opensanctions.zahir.ftm.entity.StatementEntity;
-import org.opensanctions.zahir.ftm.exceptions.SchemaException;
-import org.opensanctions.zahir.ftm.model.Property;
-import org.opensanctions.zahir.ftm.model.Schema;
-import org.opensanctions.zahir.ftm.statement.Statement;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
-import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tech.followthemoney.entity.StatementEntity;
+import tech.followthemoney.exc.SchemaException;
+import tech.followthemoney.model.Property;
+import tech.followthemoney.model.Schema;
+import tech.followthemoney.statement.Statement;
 
 public class StoreWriter implements AutoCloseable {
     private static final int BATCH_SIZE = 100000;
@@ -25,7 +25,6 @@ public class StoreWriter implements AutoCloseable {
     private final String version;
     private final String lockId;
     private WriteBatch batch;
-    private final WriteOptions writeOptions;
     private final Map<String, Schema> entitySchemata;
     
     public StoreWriter(Store store, String dataset, String version) throws RocksDBException{
@@ -33,7 +32,7 @@ public class StoreWriter implements AutoCloseable {
         this.dataset = dataset;
         this.version = version;
         this.batch = new WriteBatch();
-        this.writeOptions = new WriteOptions();
+
         this.entitySchemata = new HashMap<>();
         this.lockId = CoreUtil.makeRandomId();
         store.getLock().acquire(dataset, version, this.lockId);
@@ -97,7 +96,7 @@ public class StoreWriter implements AutoCloseable {
             batch.put(entityKey, schemaBytes);
         }
         entitySchemata.clear();
-        store.getDB().write(writeOptions, batch);
+        store.getDB().write(store.writeOptions, batch);
         batch.close();
         batch = new WriteBatch();
     }
@@ -106,7 +105,7 @@ public class StoreWriter implements AutoCloseable {
     public void close() throws RocksDBException {
         // flush();
         batch.close();
-        writeOptions.close();
+        
         store.getLock().release(dataset, version, lockId);
         log.info("Closed writer for dataset [{}]: {} ({})", dataset, version, lockId);
     }

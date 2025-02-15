@@ -2,42 +2,55 @@ package org.opensanctions.zahir.db;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.opensanctions.zahir.db.proto.StatementValue;
-import org.opensanctions.zahir.ftm.entity.StatementEntity;
-import org.opensanctions.zahir.ftm.exceptions.SchemaException;
-import org.opensanctions.zahir.ftm.model.Model;
-import org.opensanctions.zahir.ftm.model.Schema;
-import org.opensanctions.zahir.ftm.resolver.Identifier;
-import org.opensanctions.zahir.ftm.resolver.Linker;
-import org.opensanctions.zahir.ftm.statement.Statement;
+import org.opensanctions.zahir.resolver.Identifier;
+import org.opensanctions.zahir.resolver.Linker;
+import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.WriteBatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-public class StoreView {
+import tech.followthemoney.entity.StatementEntity;
+import tech.followthemoney.exc.SchemaException;
+import tech.followthemoney.exc.ViewException;
+import tech.followthemoney.model.Model;
+import tech.followthemoney.model.Schema;
+import tech.followthemoney.statement.Statement;
+import tech.followthemoney.store.Adjacency;
+import tech.followthemoney.store.View;
+
+public class StoreView extends View<StatementEntity> {
     private final static Logger log = LoggerFactory.getLogger(StoreView.class);
 
     private final Store store;
     private final Linker linker;
+    private final Model model;
     private final Map<String, String> datasets;
+    private final ReadOptions readOptions;
     private String lockId;
 
     public StoreView(Store store, Linker linker, Map<String, String> datasets) {
         this.store = store;
+        this.model = store.getModel();
         this.linker = linker;
         this.datasets = datasets;
+
+        readOptions = new ReadOptions();
+        // readOptions.setPrefixSameAsStart(true);
+        readOptions.setVerifyChecksums(false);
+        // readOptions.setFillCache(true);
     }
 
     public String lockScope() throws RocksDBException {
@@ -53,11 +66,60 @@ public class StoreView {
         this.lockId = lockId;
     }
 
-    public void releaseScopeLock() throws RocksDBException {
+    @Override
+    public void close() throws ViewException {
+        if (lockId == null) {
+            return;
+        }
         for (String dataset : datasets.keySet()) {
             String version = datasets.get(dataset);
-            store.getLock().release(dataset, version, lockId);
+            try {
+                store.getLock().release(dataset, version, lockId);    
+            } catch (RocksDBException e) {
+                log.error("Failed to release view lock", e);
+            }
         }
+        byte[] rangeStart = Key.makePrefix(Store.VIEW_KEY, lockId);
+        byte[] rangeEnd = Key.makePrefixRangeEnd(Store.VIEW_KEY, lockId);
+        try {
+            store.getDB().deleteRange(rangeStart, rangeEnd);
+        } catch (RocksDBException e) {
+            log.error("Failed to delete view keys", e);
+        }
+    }
+
+    private List<Statement> getLocalStatements(RocksDB db, String canonicalId, String dataset, String version, String localId) throws RocksDBException {
+        List<Statement> statements = new ArrayList<>();
+        byte[] stmtPrefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.STATEMENT_KEY, localId);
+        try (RocksIterator iterator = db.newIterator(readOptions)) {
+            iterator.seek(stmtPrefix);
+            while (iterator.isValid()) {
+                byte[] itKey = iterator.key();
+                if (!Key.hasPrefix(itKey, stmtPrefix)) {
+                    break;
+                }
+                String[] stmtKey = Key.splitKey(itKey);
+                boolean external = stmtKey[5].equals("x");
+                String stmtId = stmtKey[6];
+                String schemaName = stmtKey[7];
+                Schema schema = model.getSchema(schemaName);
+                if (schema == null) {
+                    log.warn("Schema not found: {} (Dataset: {}, Entity: {})", schemaName, dataset, localId);
+                    continue;
+                }
+                String propertyName = stmtKey[8];
+                try {
+                    StatementValue stmtValue = StatementValue.parseFrom(iterator.value());
+                    Statement stmt = new Statement(stmtId, localId, canonicalId, schema, propertyName, dataset, stmtValue.getValue(), stmtValue.getLang(), stmtValue.getOriginalValue(), external, stmtValue.getFirstSeen(), stmtValue.getLastSeen());
+                    statements.add(stmt);
+                } catch (InvalidProtocolBufferException e) {
+                    log.warn("Failed to parse statement value: {}", e.getMessage());
+                    continue;
+                }
+                iterator.next();
+            }
+        }
+        return statements;
     }
 
     public List<Statement> getStatements(String entityId) throws RocksDBException {
@@ -72,9 +134,7 @@ public class StoreView {
                 keys.add(key);
             }
         }
-
         RocksDB db = store.getDB();
-        Model model = store.getModel();
         List<Statement> statements = new ArrayList<>();
         List<byte[]> values = db.multiGetAsList(keys);
         for (int i = 0; i < keys.size(); i++) {
@@ -83,133 +143,138 @@ public class StoreView {
                 continue;
             }
             String[] key = Key.splitKey(keys.get(i));
-            String dataset = key[0];
-            String version = key[1];
-            String localId = key[3];
-
-            byte[] stmtPrefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.STATEMENT_KEY, localId);
-            try (var iterator = db.newIterator()) {
-                iterator.seek(stmtPrefix);
-                while (iterator.isValid()) {
-                    byte[] itKey = iterator.key();
-                    if (!Key.hasPrefix(itKey, stmtPrefix)) {
-                        break;
-                    }
-                    String[] stmtKey = Key.splitKey(itKey);
-                    boolean external = stmtKey[4].equals("x");
-                    String stmtId = stmtKey[5];
-                    String schemaName = stmtKey[6];
-                    Schema schema = model.getSchema(schemaName);
-                    if (schema == null) {
-                        log.warn("Schema not found: {} (Dataset: {}, Entity: {})", schemaName, dataset, localId);
-                        continue;
-                    }
-                    String propertyName = stmtKey[7];
-                    try {
-                        StatementValue stmtValue = StatementValue.parseFrom(iterator.value());
-                        Statement stmt = new Statement(stmtId, localId, canonicalId, schema, propertyName, dataset, stmtValue.getValue(), stmtValue.getLang(), stmtValue.getOriginalValue(), external, stmtValue.getFirstSeen(), stmtValue.getLastSeen());
-                        statements.add(stmt);
-                    } catch (InvalidProtocolBufferException e) {
-                        log.warn("Failed to parse statement value: {}", e.getMessage());
-                        continue;
-                    }
-                    iterator.next();
-                }
-            }   
+            String dataset = key[1];
+            String version = key[2];
+            String localId = key[4];
+            statements.addAll(getLocalStatements(db, canonicalId, dataset, version, localId));
         }
         return statements;
     }
 
-    public Optional<StatementEntity> getEntity(String entityId) throws RocksDBException, SchemaException {
-        List<Statement> statements = getStatements(entityId);
-        if (statements.isEmpty()) {
-            return Optional.empty();
+    @Override
+    public Optional<StatementEntity> getEntity(String entityId) throws ViewException {
+        try {
+            List<Statement> statements = getStatements(entityId);
+            if (statements.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(StatementEntity.fromStatements(statements));    
+        } catch (RocksDBException e) {
+            throw new ViewException("Database error", e);
+        } catch (SchemaException e) {
+            throw new ViewException("Schema error", e);
         }
-        return Optional.of(StatementEntity.fromStatements(statements));
+        
     }
 
-    private class EntityIterator implements Iterator<StatementEntity> {
-        private final RocksIterator iterator;
-        private final Set<String> seen;
-        private final LinkedList<String> remainingDatasets;
-        private byte[] prefix;
-        private StatementEntity nextEntity;
-
-        public EntityIterator() throws RocksDBException {
-            this.iterator = store.getDB().newIterator();
-            this.seen = new HashSet<>();
-            this.remainingDatasets = new LinkedList<>(datasets.keySet());
-            loadNext();
+    @Override
+    public boolean hasEntity(String entityId) throws ViewException {
+        // nb: This doesn't actually need to retrieve the statements, we just need 
+        // to check if there are any entity keys. Since we're not using this in the
+        // current implementation, we'll leave it as is.
+        try {
+            List<Statement> statements = getStatements(entityId);
+            return !statements.isEmpty();
+        } catch (RocksDBException e) {
+            throw new ViewException("Database error", e);
         }
+    }
 
-        private void loadNext() throws RocksDBException {
-            nextEntity = null;
-            while (true) { 
-                if (this.prefix == null) {
-                    if (remainingDatasets.isEmpty()) {
-                        return;
-                    }
-                    String dataset = remainingDatasets.removeLast();
-                    String version = datasets.get(dataset);
-                    log.warn("Loading entities for dataset: {} (Version: {})", dataset, version);
-                    this.prefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.ENTITY_KEY);
-                    iterator.seek(this.prefix);
+    @Override
+    public Stream<Adjacency<StatementEntity>> getInverted(String entityId) {
+        // This is not used in the current implementation, so we'll leave it as is.
+        return Stream.empty();
+    }
+
+    private StatementEntity collectCanonical(RocksDB db, RocksIterator it, byte[] prefix) throws NoSuchElementException, RocksDBException {
+        while (true) {
+            List<Statement> statements = new ArrayList<>(100);
+            String canonicalId = null;
+            while (true) {
+                if (!it.isValid()) {
+                    throw new NoSuchElementException();
                 }
-                if (!iterator.isValid()) {
-                    prefix = null;
-                    return;
-                }
-                byte[] key = iterator.key();
-                // System.out.println("XXXX key: " + new String(key));
-                iterator.next();
-                
+                byte[] key = it.key();
                 if (!Key.hasPrefix(key, prefix)) {
-                    prefix = null;
-                    continue;
+                    throw new NoSuchElementException();
                 }
                 String[] keyParts = Key.splitKey(key);
-                String entityId = keyParts[3];
-                Identifier canonical = linker.getCanonicalIdentifier(entityId);
-                String canonicalId = canonical.toString();
-                if (canonical.isCanonical()) {
-                    if (seen.contains(canonicalId)) {
-                        continue;
-                    }
-                    seen.add(canonicalId);
+                String nextCanonicalId = keyParts[2];
+                String dataset = keyParts[3];
+                String version = keyParts[4];
+                String localId = keyParts[5];
+                if (canonicalId == null) {
+                    canonicalId = nextCanonicalId;
+                } else if (!nextCanonicalId.equals(canonicalId)) {
+                    break;
                 }
-                List<Statement> statements = getStatements(entityId);
-                if (statements.isEmpty()) {
-                    log.info("Entity {} has no statements", entityId);
-                    continue;
-                }
-                try {
-                    nextEntity = StatementEntity.fromStatements(statements);
-                    return;    
-                } catch (SchemaException e) {
-                    log.error("Failed to create entity: {} (Entity: {})", e.getMessage(), entityId);
-                }
+                statements.addAll(getLocalStatements(db, canonicalId, dataset, version, localId));
+                it.next();
             }
-        }
-        
-        @Override
-        public boolean hasNext() {
-            return nextEntity != null;
-        }
-        
-        @Override
-        public StatementEntity next() {
-            StatementEntity entity = this.nextEntity;
+            if (statements.isEmpty()) {
+                continue;
+            }
             try {
-                loadNext();    
-            } catch (RocksDBException e) {
-                log.error("Failed to load next entity: {}", e.getMessage());
-                nextEntity = null;
+                return StatementEntity.fromStatements(statements);    
+            } catch (SchemaException e) {
+                log.warn("Schema error building: " + canonicalId, e);
             }
-            return entity;
         }
     }
 
-    public Iterator<StatementEntity> entities() throws RocksDBException {
-        return new EntityIterator();
+    @Override
+    public Stream<StatementEntity> allEntities() throws ViewException {
+        try {
+            RocksDB db = store.getDB();
+            RocksIterator iterator = db.newIterator(readOptions);
+            WriteBatch batch = new WriteBatch();
+            long entityParts = 0;
+            byte[] stub = new byte[0];
+            for (var entry : datasets.entrySet()) {
+                String dataset = entry.getKey();
+                String version = entry.getValue();
+                byte[] prefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.ENTITY_KEY);
+                iterator.seek(prefix);
+                while (iterator.isValid()) {
+                    byte[] key = iterator.key();
+                    if (!Key.hasPrefix(key, prefix)) {
+                        break;
+                    }
+                    String[] keyParts = Key.splitKey(key);
+                    String entityId = keyParts[4];
+                    String canonicalId = linker.getCanonicalIdentifier(entityId).toString();
+                    byte[] viewKey = Key.makeKey(Store.VIEW_KEY, lockId, canonicalId, dataset, version, entityId);
+                    batch.put(viewKey, stub);
+                    entityParts += 1;
+                    if (batch.count() >= 10000) {
+                        db.write(store.writeOptions, batch);
+                        batch.close();
+                        batch = new WriteBatch();
+                    }
+                    iterator.next();
+                }
+            }
+            if (batch.count() >= 0) {
+                db.write(store.writeOptions, batch);
+                batch.close();
+            }
+            log.info("Generated {} entity parts, {} datasets", entityParts, datasets.size());
+
+            RocksIterator resolvedIterator = db.newIterator(readOptions);
+            byte[] prefix = Key.makePrefix(Store.VIEW_KEY, lockId);
+            resolvedIterator.seek(prefix);
+            return Stream.generate(() -> {
+                try {
+                    return collectCanonical(db, resolvedIterator, prefix);
+                } catch (RocksDBException e) {
+                    log.error("Database error", e);
+                    return null;
+                } catch (NoSuchElementException e) {
+                    return null;
+                }
+            }).takeWhile(entity -> entity != null);
+        } catch (RocksDBException e) {
+            throw new ViewException("Database error", e);
+        }
     }
 }

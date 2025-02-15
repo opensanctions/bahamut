@@ -4,8 +4,10 @@ import java.util.Map;
 
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.db.StoreView;
-import org.opensanctions.zahir.ftm.resolver.Linker;
+import org.opensanctions.zahir.resolver.Linker;
 import org.rocksdb.RocksDBException;
+
+import tech.followthemoney.exc.ViewException;
 
 public class ViewSession {
     // private final static Logger log = LoggerFactory.getLogger(ViewSession.class);
@@ -38,9 +40,9 @@ public class ViewSession {
         return view;
     }
 
-    public void close() throws RocksDBException {
+    public void close() throws ViewException {
         StoreView view = getStoreView();
-        view.releaseScopeLock();
+        view.close();
     }
 
 }

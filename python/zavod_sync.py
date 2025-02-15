@@ -1,4 +1,3 @@
-from grpc import server
 from zavod.logs import get_logger
 from zavod.meta import get_catalog
 from zavod.runtime.versions import get_latest

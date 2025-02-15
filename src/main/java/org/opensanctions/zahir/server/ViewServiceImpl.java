@@ -8,9 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.opensanctions.zahir.db.StoreView;
-import org.opensanctions.zahir.ftm.entity.StatementEntity;
-import org.opensanctions.zahir.ftm.exceptions.SchemaException;
-import org.opensanctions.zahir.ftm.statement.Statement;
 import org.opensanctions.zahir.server.proto.v1.CloseViewRequest;
 import org.opensanctions.zahir.server.proto.v1.CloseViewResponse;
 import org.opensanctions.zahir.server.proto.v1.CreateViewRequest;
@@ -31,6 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.grpc.stub.StreamObserver;
+import tech.followthemoney.entity.StatementEntity;
+import tech.followthemoney.exc.ViewException;
+import tech.followthemoney.statement.Statement;
 
 public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
     private final static Logger log = LoggerFactory.getLogger(ViewServiceImpl.class);
@@ -115,13 +115,14 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
     @Override
     public void closeView(CloseViewRequest request, StreamObserver<CloseViewResponse> responseObserver) {
         try {
+            log.info("Closing client session: {}", request.getViewId());
             manager.closeSession(request.getViewId());
             CloseViewResponse response = CloseViewResponse.newBuilder()
                 .setSuccess(true)
                 .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (RocksDBException e) {   
+        } catch (ViewException e) {   
             log.error("Cannot close session", e);
             responseObserver.onError(e);
             responseObserver.onCompleted();
@@ -175,7 +176,7 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
                 
             }
             responseObserver.onCompleted();
-        } catch (RocksDBException | SchemaException e) {
+        } catch (ViewException e) {
             log.error("Failed to retrieve entity", e);
             responseObserver.onError(e);
             responseObserver.onCompleted();
@@ -192,12 +193,12 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
         }
         try {
             StoreView view = session.getStoreView();
-            Iterator<StatementEntity> entities = view.entities();
+            Iterator<StatementEntity> entities = view.allEntities().iterator();
             while (entities.hasNext()) {
                 responseObserver.onNext(buildViewEntity(entities.next()));
             }
             responseObserver.onCompleted();
-        } catch (RocksDBException e) {
+        } catch (ViewException e) {
             log.error("Failed to retrieve entities", e);
             responseObserver.onError(e);
             responseObserver.onCompleted();

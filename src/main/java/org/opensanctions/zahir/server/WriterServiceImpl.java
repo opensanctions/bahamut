@@ -2,9 +2,9 @@ package org.opensanctions.zahir.server;
 
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.db.StoreWriter;
-import org.opensanctions.zahir.ftm.model.Model;
-import org.opensanctions.zahir.ftm.model.Schema;
-import org.opensanctions.zahir.ftm.statement.Statement;
+import tech.followthemoney.model.Model;
+import tech.followthemoney.model.Schema;
+import tech.followthemoney.statement.Statement;
 import org.opensanctions.zahir.server.proto.v1.DeleteDatasetRequest;
 import org.opensanctions.zahir.server.proto.v1.DeleteDatasetResponse;
 import org.opensanctions.zahir.server.proto.v1.ReleaseDatasetRequest;

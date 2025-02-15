@@ -9,11 +9,13 @@ import java.util.Optional;
 
 import org.opensanctions.zahir.Config;
 import org.opensanctions.zahir.db.Store;
-import org.opensanctions.zahir.ftm.model.Model;
-import org.opensanctions.zahir.ftm.resolver.Linker;
+import org.opensanctions.zahir.resolver.Linker;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tech.followthemoney.exc.ViewException;
+import tech.followthemoney.model.Model;
 
 public class ZahirManager {
     private final static Logger log = LoggerFactory.getLogger(ZahirManager.class);
@@ -52,7 +54,7 @@ public class ZahirManager {
         return sessions.get(id);
     }
 
-    public Optional<ViewSession> closeSession(String id) throws RocksDBException {
+    public Optional<ViewSession> closeSession(String id) throws ViewException {
         ViewSession session = sessions.remove(id);
         if (session != null) {
             session.close();
@@ -64,7 +66,7 @@ public class ZahirManager {
         for (ViewSession session : sessions.values()) {
             try {
                 session.close();
-            } catch (RocksDBException e) {
+            } catch (ViewException e) {
                 log.error("Failed to close session: {}", e.getMessage());
             }
         }

@@ -39,6 +39,7 @@ message ViewEntity {
   string id = 1;
   string caption = 2;
   repeated ViewStatement statements = 3;
+  repeated string referents = 4;
 }
 
 message GetDatasetsRequest {

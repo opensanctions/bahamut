@@ -8,14 +8,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.opensanctions.zahir.ftm.model.Model;
-import org.opensanctions.zahir.ftm.resolver.Linker;
+import org.opensanctions.zahir.resolver.Linker;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tech.followthemoney.model.Model;
 
 public class Store {
     private final static Logger log = LoggerFactory.getLogger(Store.class);
@@ -26,16 +31,24 @@ public class Store {
     protected static final String DATA_KEY = "d";
     protected static final String VERSIONS_KEY = "sys.versions";
     protected static final String LOCKS_KEY = "sys.locks";
+    protected static final String VIEW_KEY = "sys.view";
 
     private final String path;
     private final Model model;
     private RocksDB rocksDB;
+    protected final WriteOptions writeOptions;
+    
 
     public Store(Model model, String path) {
         this.model = model;
         this.path = path;
+
         // Load the RocksDB C++ library
         RocksDB.loadLibrary();
+
+        writeOptions = new WriteOptions();
+        writeOptions.setSync(false);
+        writeOptions.setDisableWAL(false);
     }
 
     public void initDB() throws RocksDBException {
@@ -45,6 +58,25 @@ public class Store {
         options.setCreateMissingColumnFamilies(true);
         // Optimize for SSD if using one
         options.setLevelCompactionDynamicLevelBytes(true);
+
+        options.setMemtablePrefixBloomSizeRatio(0.1);
+        options.setWriteBufferSize(256 * 1024 * 1024); // 256MB
+        options.setMaxWriteBufferNumber(4);
+        options.setMinWriteBufferNumberToMerge(2);
+
+        options.setMaxBackgroundJobs(4);
+        // options.setAllowConcurrentMemtableWrite(true);
+
+        // Additional performance optimizations
+        // options.setUseFsync(false);
+
+        BlockBasedTableConfig tableConfig = new BlockBasedTableConfig();
+        tableConfig.setBlockSize(32 * 1024);  // 32KB
+        tableConfig.setBlockCache(new LRUCache(512 * 1024 * 1024));  // 512MB block cache
+        tableConfig.setCacheIndexAndFilterBlocks(true);
+        tableConfig.setPinL0FilterAndIndexBlocksInCache(true);
+        tableConfig.setFilterPolicy(new BloomFilter(10));  // ~1% false positive rate
+        options.setTableFormatConfig(tableConfig);
 
         // Open the database
         File dbFile = new File(path);
@@ -171,6 +203,7 @@ public class Store {
     }
 
     public void close() {
+        writeOptions.close();
         // Close the database
         if (rocksDB != null) {
             rocksDB.close();
