@@ -1,5 +1,6 @@
 from zavod.logs import get_logger
 from zavod.meta import get_catalog
+from zavod.entity import Entity
 from zavod.runtime.versions import get_latest
 from zavod.archive import iter_dataset_statements
 
@@ -8,8 +9,8 @@ from zahirclient.client import ZahirClient
 log = get_logger("zavod_sync")
 
 catalog = get_catalog()
-scope = catalog.require("default")
-client = ZahirClient("http://localhost:6674")
+scope = catalog.require("sanctions")
+client = ZahirClient(Entity, scope, "http://localhost:6674")
 server_versions = client.get_datasets()
 for dataset in scope.datasets:
     if dataset.is_collection:

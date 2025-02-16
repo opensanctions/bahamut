@@ -65,6 +65,7 @@ public class ZahirManager {
     public void shutdown() {
         for (ViewSession session : sessions.values()) {
             try {
+                log.info("Shutting down view session: {}", session.getId());
                 session.close();
             } catch (ViewException e) {
                 log.error("Failed to close session: {}", e.getMessage());

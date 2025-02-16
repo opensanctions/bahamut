@@ -45,6 +45,14 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
         this.manager = manager;
     }
 
+    private StoreView requireStore(String viewId) throws ViewException{
+        ViewSession session = manager.getSession(viewId);
+        if (session == null) {
+            throw new ViewException("No such session: " + viewId);
+        }
+        return session.getStoreView();
+    }
+
     @Override
     public void getDatasets(GetDatasetsRequest request, StreamObserver<GetDatasetsResponse> responseObserver) {
         try {
@@ -162,14 +170,8 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
 
     @Override
     public void getEntity(EntityRequest request, StreamObserver<EntityResponse> responseObserver) {
-        ViewSession session = manager.getSession(request.getViewId());
-        if (session == null) {
-            responseObserver.onError(new IllegalArgumentException("No such session"));
-            responseObserver.onCompleted();
-            return;
-        }
         try {
-            StoreView view = session.getStoreView();
+            StoreView view = requireStore(request.getViewId());
             Optional<StatementEntity> entity = view.getEntity(request.getEntityId());
             if (entity.isEmpty()) {
                 EntityResponse response = EntityResponse.newBuilder().build();
@@ -191,14 +193,8 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
 
     @Override
     public void getEntities(EntityStreamRequest request, StreamObserver<ViewEntity> responseObserver) {
-        ViewSession session = manager.getSession(request.getViewId());
-        if (session == null) {
-            responseObserver.onError(new IllegalArgumentException("No such session"));
-            responseObserver.onCompleted();
-            return;
-        }
         try {
-            StoreView view = session.getStoreView();
+            StoreView view = requireStore(request.getViewId());
             Iterator<StatementEntity> entities = view.allEntities().iterator();
             while (entities.hasNext()) {
                 responseObserver.onNext(buildViewEntity(entities.next()));
@@ -213,14 +209,8 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
 
     @Override
     public void getAdjacent(AdjacencyRequest request, StreamObserver<AdjacencyResponse> responseObserver) {
-        ViewSession session = manager.getSession(request.getViewId());
-        if (session == null) {
-            responseObserver.onError(new IllegalArgumentException("No such session"));
-            responseObserver.onCompleted();
-            return;
-        }
         try {
-            StoreView view = session.getStoreView();
+            StoreView view = requireStore(request.getViewId());
             boolean inverted = request.getInverted();
             Optional<StatementEntity> fEntity = view.getEntity(request.getEntityId());
             if (fEntity.isEmpty()) {
