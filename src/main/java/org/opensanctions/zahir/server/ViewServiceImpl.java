@@ -6,8 +6,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.opensanctions.zahir.db.StoreView;
+import org.opensanctions.zahir.server.proto.v1.AdjacencyRequest;
+import org.opensanctions.zahir.server.proto.v1.AdjacencyResponse;
 import org.opensanctions.zahir.server.proto.v1.CloseViewRequest;
 import org.opensanctions.zahir.server.proto.v1.CloseViewResponse;
 import org.opensanctions.zahir.server.proto.v1.CreateViewRequest;
@@ -31,6 +34,7 @@ import io.grpc.stub.StreamObserver;
 import tech.followthemoney.entity.StatementEntity;
 import tech.followthemoney.exc.ViewException;
 import tech.followthemoney.statement.Statement;
+import tech.followthemoney.store.Adjacency;
 
 public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
     private final static Logger log = LoggerFactory.getLogger(ViewServiceImpl.class);
@@ -98,7 +102,9 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
             }
         }
         try {
-            ViewSession session = manager.createSession(scope);
+            boolean unResolved = request.getUnresolved();
+            boolean withExternal = request.getWithExternal();
+            ViewSession session = manager.createSession(scope, unResolved, withExternal);
             log.info("New client session: {}", session.getId());
             CreateViewResponse response = CreateViewResponse.newBuilder()
                 .setViewId(session.getId())
@@ -200,6 +206,43 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
             responseObserver.onCompleted();
         } catch (ViewException e) {
             log.error("Failed to retrieve entities", e);
+            responseObserver.onError(e);
+            responseObserver.onCompleted();
+        }
+    }
+
+    @Override
+    public void getAdjacent(AdjacencyRequest request, StreamObserver<AdjacencyResponse> responseObserver) {
+        ViewSession session = manager.getSession(request.getViewId());
+        if (session == null) {
+            responseObserver.onError(new IllegalArgumentException("No such session"));
+            responseObserver.onCompleted();
+            return;
+        }
+        try {
+            StoreView view = session.getStoreView();
+            boolean inverted = request.getInverted();
+            Optional<StatementEntity> fEntity = view.getEntity(request.getEntityId());
+            if (fEntity.isEmpty()) {
+                responseObserver.onError(new IllegalArgumentException("No such entity"));
+                responseObserver.onCompleted();
+                return;
+            }
+            StatementEntity entity = fEntity.get();
+            Stream<Adjacency<StatementEntity>> adjacencies = inverted ? view.getAdjacent(entity) : view.getOutbound(entity);
+            Iterator<Adjacency<StatementEntity>> iterator = adjacencies.iterator();
+            while (iterator.hasNext()) {
+                Adjacency<StatementEntity> adjacency = iterator.next();
+                ViewEntity viewEntity = buildViewEntity(adjacency.getEntity());
+                AdjacencyResponse resp = AdjacencyResponse.newBuilder()
+                    .setProperty(adjacency.getProperty().getName())
+                    .setEntity(viewEntity)
+                    .build();
+                responseObserver.onNext(resp);
+            }
+            responseObserver.onCompleted();
+        } catch (ViewException e) {
+            log.error("Failed to retrieve adjacent entities", e);
             responseObserver.onError(e);
             responseObserver.onCompleted();
         }

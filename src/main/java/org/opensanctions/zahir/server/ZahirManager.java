@@ -44,8 +44,8 @@ public class ZahirManager {
         return model;
     }
 
-    public ViewSession createSession(Map<String, String> scope) throws RocksDBException{
-        ViewSession session = new ViewSession(this, scope);
+    public ViewSession createSession(Map<String, String> scope, boolean unResolved, boolean withExternal) throws RocksDBException{
+        ViewSession session = new ViewSession(this, scope, unResolved, withExternal);
         sessions.put(session.getId(), session);
         return session;
     }

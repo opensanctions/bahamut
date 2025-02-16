@@ -8,7 +8,7 @@ from zahirclient.client import ZahirClient
 log = get_logger("zavod_sync")
 
 catalog = get_catalog()
-scope = catalog.require("sanctions")
+scope = catalog.require("default")
 client = ZahirClient("http://localhost:6674")
 server_versions = client.get_datasets()
 for dataset in scope.datasets:
@@ -32,9 +32,15 @@ for dataset in scope.datasets:
     client.release_dataset(dataset.name, latest_version)
 
 
-# # view = store.default_view()
-# for idx, ent in enumerate(view.entities()):
-#     if idx > 0 and idx % 10_000 == 0:
-#         log.info("Loading entities...", entities=idx, scope=scope.name)
-#         for i in range(5):
-#             ent.to_nested_dict(view)
+for dataset, latest_version in client.get_datasets().items():
+    versions = client.get_dataset_versions(dataset)
+    for version in versions:
+        if version == latest_version:
+            continue
+        deleted = client.delete_dataset_version(dataset, version)
+        log.info(
+            "Deleted dataset version",
+            dataset=dataset,
+            version=version,
+            deleted=deleted,
+        )

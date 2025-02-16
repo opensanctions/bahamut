@@ -2,6 +2,7 @@ package org.opensanctions.zahir.db;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -26,6 +27,7 @@ import tech.followthemoney.entity.StatementEntity;
 import tech.followthemoney.exc.SchemaException;
 import tech.followthemoney.exc.ViewException;
 import tech.followthemoney.model.Model;
+import tech.followthemoney.model.Property;
 import tech.followthemoney.model.Schema;
 import tech.followthemoney.statement.Statement;
 import tech.followthemoney.store.Adjacency;
@@ -39,13 +41,15 @@ public class StoreView extends View<StatementEntity> {
     private final Model model;
     private final Map<String, String> datasets;
     private final ReadOptions readOptions;
+    private final boolean withExternal;
     private String lockId;
 
-    public StoreView(Store store, Linker linker, Map<String, String> datasets) {
+    public StoreView(Store store, Linker linker, Map<String, String> datasets, boolean withExternal) {
         this.store = store;
         this.model = store.getModel();
         this.linker = linker;
         this.datasets = datasets;
+        this.withExternal = withExternal;
 
         readOptions = new ReadOptions();
         // readOptions.setPrefixSameAsStart(true);
@@ -100,11 +104,16 @@ public class StoreView extends View<StatementEntity> {
                 }
                 String[] stmtKey = Key.splitKey(itKey);
                 boolean external = stmtKey[5].equals("x");
+                if (external && !withExternal) {
+                    iterator.next();
+                    continue;
+                }
                 String stmtId = stmtKey[6];
                 String schemaName = stmtKey[7];
                 Schema schema = model.getSchema(schemaName);
                 if (schema == null) {
                     log.warn("Schema not found: {} (Dataset: {}, Entity: {})", schemaName, dataset, localId);
+                    iterator.next();
                     continue;
                 }
                 String propertyName = stmtKey[8];
@@ -114,6 +123,7 @@ public class StoreView extends View<StatementEntity> {
                     statements.add(stmt);
                 } catch (InvalidProtocolBufferException e) {
                     log.warn("Failed to parse statement value: {}", e.getMessage());
+                    iterator.next();
                     continue;
                 }
                 iterator.next();
@@ -181,9 +191,58 @@ public class StoreView extends View<StatementEntity> {
     }
 
     @Override
-    public Stream<Adjacency<StatementEntity>> getInverted(String entityId) {
-        // This is not used in the current implementation, so we'll leave it as is.
-        return Stream.empty();
+    public Stream<Adjacency<StatementEntity>> getInverted(String entityId) throws ViewException {
+        try {
+            // Collect all the entities with a property pointing to the given entityId, and 
+            // generate canonical Ids for each.
+            RocksDB db = store.getDB();
+            RocksIterator iterator = db.newIterator(readOptions);
+            Set<Identifier> connected = linker.getConnected(entityId);
+            Set<Map.Entry<String, String>> inverse = new HashSet<>();
+            for (String dataset : datasets.keySet()) {
+                String version = datasets.get(dataset);
+                for (Identifier identifier : connected) {
+                    byte[] prefix = Key.makePrefix(Store.DATA_KEY, dataset, version, Store.INVERTED_KEY, identifier.toString());
+                    iterator.seek(prefix);
+                    while (iterator.isValid()) {
+                        byte[] key = iterator.key();
+                        if (!Key.hasPrefix(key, prefix)) {
+                            break;
+                        }
+                        String[] keyParts = Key.splitKey(key);
+                        String localId = keyParts[5];
+                        String property = new String(iterator.value());
+                        // nb. the property is in the value, can be used to filter
+                        String canonicalId = linker.getCanonicalIdentifier(localId).toString();
+                        inverse.add(Map.entry(canonicalId, property));
+                        iterator.next();
+                    }
+                }
+            }
+
+            // For each entity, retrieve the property and build an adjacency object.
+            return inverse.stream()
+                .map(entry -> {
+                    try {
+                        Optional<StatementEntity> fEntity = getEntity(entry.getKey());
+                        if (fEntity.isEmpty()) {
+                            return null;
+                        }
+                        StatementEntity entity = fEntity.get();
+                        Property property = entity.getSchema().getProperty(entry.getValue());
+                        if (property == null) {
+                            return null;
+                        }
+                        return new Adjacency<StatementEntity>(property, entity);
+                    } catch (ViewException e) {
+                        log.error("Failed to retrieve entity: {}", entry.getKey(), e);
+                        return null;
+                    }
+                })
+                .filter(adj -> adj != null);
+        } catch (RocksDBException e) {
+            throw new ViewException("Database error", e);
+        }
     }
 
     private StatementEntity collectCanonical(RocksDB db, RocksIterator it, byte[] prefix) throws NoSuchElementException, RocksDBException {
@@ -246,7 +305,7 @@ public class StoreView extends View<StatementEntity> {
                     byte[] viewKey = Key.makeKey(Store.VIEW_KEY, lockId, canonicalId, dataset, version, entityId);
                     batch.put(viewKey, stub);
                     entityParts += 1;
-                    if (batch.count() >= 10000) {
+                    if (batch.count() >= Store.WRITE_BATCH_SIZE) {
                         db.write(store.writeOptions, batch);
                         batch.close();
                         batch = new WriteBatch();

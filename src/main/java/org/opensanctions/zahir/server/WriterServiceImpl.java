@@ -2,9 +2,6 @@ package org.opensanctions.zahir.server;
 
 import org.opensanctions.zahir.db.Store;
 import org.opensanctions.zahir.db.StoreWriter;
-import tech.followthemoney.model.Model;
-import tech.followthemoney.model.Schema;
-import tech.followthemoney.statement.Statement;
 import org.opensanctions.zahir.server.proto.v1.DeleteDatasetRequest;
 import org.opensanctions.zahir.server.proto.v1.DeleteDatasetResponse;
 import org.opensanctions.zahir.server.proto.v1.ReleaseDatasetRequest;
@@ -17,6 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.grpc.stub.StreamObserver;
+import tech.followthemoney.model.Model;
+import tech.followthemoney.model.Schema;
+import tech.followthemoney.statement.Statement;
 
 public class WriterServiceImpl extends WriterServiceGrpc.WriterServiceImplBase {
     private final static Logger log = LoggerFactory.getLogger(WriterServiceImpl.class);
@@ -76,7 +76,7 @@ public class WriterServiceImpl extends WriterServiceGrpc.WriterServiceImplBase {
                 log.error("Error in write stream:", t);
                 try {
                     if (writer != null) {
-                    writer.close();
+                        writer.close();
                     }
                 } catch (RocksDBException e) {
                     log.error("Error closing writer:", e);
@@ -88,6 +88,7 @@ public class WriterServiceImpl extends WriterServiceGrpc.WriterServiceImplBase {
             public void onCompleted() {
                 try {
                     if (writer != null) {
+                        writer.flush();
                         writer.close();
                     }
                 } catch (RocksDBException e) {

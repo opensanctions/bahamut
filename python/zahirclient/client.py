@@ -1,25 +1,31 @@
-from typing import Dict, Iterable, List
+from typing import Dict, Generic, Iterable, List, Type
 import logging
 import grpc
 from urllib.parse import urlparse
 
+from nomenklatura.dataset import DS
+from nomenklatura.entity import CE
 from nomenklatura.statement import Statement
 
 from zahirclient.proto import view_pb2_grpc
-from zahirclient.proto.view_pb2 import GetDatasetsRequest, GetDatasetVersionsRequest
+from zahirclient.proto.view_pb2 import ViewEntity
+from zahirclient.proto.view_pb2 import GetDatasetsRequest
+from zahirclient.proto.view_pb2 import GetDatasetVersionsRequest
 from zahirclient.proto import writer_pb2_grpc
 from zahirclient.proto.writer_pb2 import (
     WriteStatement,
     ReleaseDatasetRequest,
     DeleteDatasetRequest,
 )
-from zahirclient.util import datetime_ts
+from zahirclient.util import datetime_ts, ts_iso
 
 log = logging.getLogger(__name__)
 
 
-class ZahirClient(object):
-    def __init__(self, url):
+class ZahirClient(Generic[DS, CE]):
+    def __init__(self, entity_class: Type[CE], dataset: DS, url: str) -> None:
+        self.entity_class = entity_class
+        self.dataset = dataset
         self.url = url
         parsed = urlparse(self.url)
         self.host = parsed.hostname
@@ -27,6 +33,30 @@ class ZahirClient(object):
         self.channel = grpc.insecure_channel(f"{self.host}:{self.port}")
         self.view_service = view_pb2_grpc.ViewServiceStub(self.channel)
         self.writer_service = writer_pb2_grpc.WriterServiceStub(self.channel)
+
+    def _convert_entity(self, ve: ViewEntity) -> CE:
+        statements: List[Statement] = []
+        for vs in ve.statements:
+            stmt = Statement(
+                id=vs.id,
+                entity_id=vs.entity_id,
+                canonical_id=ve.id,
+                schema=vs.schema,
+                prop=vs.property,
+                dataset=vs.dataset,
+                value=vs.value,
+                lang=vs.lang,
+                original_value=vs.originalValue,
+                external=vs.external,
+                first_seen=ts_iso(vs.first_seen),
+                last_seen=ts_iso(vs.last_seen),
+            )
+            statements.append(stmt)
+
+        entity = self.entity_class.from_statements(self.dataset, statements)
+        entity._caption = ve.caption
+        entity.extra_referents.update(ve.referents)
+        return entity
 
     def get_datasets(self) -> Dict[str, str]:
         resp = self.view_service.GetDatasets(GetDatasetsRequest())

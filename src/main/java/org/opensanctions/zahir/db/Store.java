@@ -29,9 +29,11 @@ public class Store {
     protected static final String ENTITY_KEY = "e";
     protected static final String INVERTED_KEY = "i";
     protected static final String DATA_KEY = "d";
-    protected static final String VERSIONS_KEY = "sys.versions";
-    protected static final String LOCKS_KEY = "sys.locks";
-    protected static final String VIEW_KEY = "sys.view";
+    protected static final String VIEW_KEY = "v";
+    protected static final String VERSIONS_KEY = "meta.versions";
+    protected static final String LOCKS_KEY = "meta.locks";
+
+    protected static final int WRITE_BATCH_SIZE = 50000;
 
     private final String path;
     private final Model model;
@@ -109,11 +111,11 @@ public class Store {
         return new StoreWriter(this, dataset, version);
     }
 
-    public StoreView getView(Linker linker) throws RocksDBException {
-        return new StoreView(this, linker, getDatasets());
+    public StoreView getView(Linker linker, boolean withExternal) throws RocksDBException {
+        return new StoreView(this, linker, getDatasets(), withExternal);
     }
 
-    public StoreView getView(Linker linker, List<String> datasets) throws RocksDBException {
+    public StoreView getView(Linker linker, List<String> datasets, boolean withExternal) throws RocksDBException {
         Map<String, String> datasetMap = new HashMap<>();
         for (String dataset : datasets) {
             Optional<String> version = getLatestDatasetVersion(dataset);
@@ -123,20 +125,20 @@ public class Store {
             }
             datasetMap.put(dataset, version.get());
         }
-        return getView(linker, datasetMap);
+        return getView(linker, datasetMap, withExternal);
     }
 
-    public StoreView getView(Linker linker, Map<String, String> datasets) {
-        return new StoreView(this, linker, datasets);
+    public StoreView getView(Linker linker, Map<String, String> datasets, boolean withExternal) {
+        return new StoreView(this, linker, datasets, withExternal);
     }
 
     public void releaseDatasetVersion(String dataset, String version) throws RocksDBException {
         RocksDB db = getDB();
         byte[] key = Key.makeKey(VERSIONS_KEY, dataset, version);
         db.put(key, CoreUtil.getTimestampValue());
-        byte[] startPrefix = Key.makePrefix(dataset, version);
-        byte[] endPrefix = Key.makePrefixRangeEnd(dataset, version);
-        db.compactRange(startPrefix, endPrefix);
+        // byte[] startPrefix = Key.makePrefix(dataset, version);
+        // byte[] endPrefix = Key.makePrefixRangeEnd(dataset, version);
+        // db.compactRange(startPrefix, endPrefix);
         log.info("Released dataset version [{}]: {}", dataset, version);
     }
 

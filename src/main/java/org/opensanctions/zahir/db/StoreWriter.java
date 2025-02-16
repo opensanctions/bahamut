@@ -17,7 +17,6 @@ import tech.followthemoney.model.Schema;
 import tech.followthemoney.statement.Statement;
 
 public class StoreWriter implements AutoCloseable {
-    private static final int BATCH_SIZE = 100000;
     private final static Logger log = LoggerFactory.getLogger(StoreWriter.class);
 
     private final Store store;
@@ -25,6 +24,8 @@ public class StoreWriter implements AutoCloseable {
     private final String version;
     private final String lockId;
     private WriteBatch batch;
+    private int writtenStatements = 0;
+    private int writtenKeys = 0;
     private final Map<String, Schema> entitySchemata;
     
     public StoreWriter(Store store, String dataset, String version) throws RocksDBException{
@@ -39,8 +40,6 @@ public class StoreWriter implements AutoCloseable {
     }
 
     public void writeStatement(Statement statement) throws RocksDBException {
-        // TODO: check statements are in the right dataset
-
         // Do this only once per entity and batch
         String entityId = statement.getEntityId();
         Schema schema = statement.getSchema();
@@ -51,6 +50,10 @@ public class StoreWriter implements AutoCloseable {
             } catch (SchemaException e) {
                 log.warn("Schema mismatch for entity {}: {}", entityId, e.getMessage());
             }
+        }
+
+        if (!statement.getDatasetName().equals(this.dataset)) {
+            log.error("Statement dataset mismatch: {} != {}", statement.getDatasetName(), this.dataset);
         }
         
         String external = statement.isExternal() ? "x" : "";
@@ -74,8 +77,9 @@ public class StoreWriter implements AutoCloseable {
                 batch.put(invKey, prop.getName().getBytes());
             }
         }
+        writtenStatements++;
         
-        if (batch.count() >= BATCH_SIZE) {
+        if (batch.count() >= Store.WRITE_BATCH_SIZE) {
             flush();
         }
     }
@@ -96,14 +100,15 @@ public class StoreWriter implements AutoCloseable {
             batch.put(entityKey, schemaBytes);
         }
         entitySchemata.clear();
+        writtenKeys += batch.count();
         store.getDB().write(store.writeOptions, batch);
+        log.info("Write {} [{}]: {} statements, {} keys...", dataset, lockId, writtenStatements, writtenKeys);
         batch.close();
         batch = new WriteBatch();
     }
 
     @Override
     public void close() throws RocksDBException {
-        // flush();
         batch.close();
         
         store.getLock().release(dataset, version, lockId);

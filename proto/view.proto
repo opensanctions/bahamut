@@ -14,6 +14,7 @@ service ViewService {
   rpc CloseView(CloseViewRequest) returns (CloseViewResponse) {}
   rpc GetEntity(EntityRequest) returns (EntityResponse) {}
   rpc GetEntities(EntityStreamRequest) returns (stream ViewEntity) {}
+  rpc GetAdjacent(AdjacencyRequest) returns (stream AdjacencyResponse) {}
 }
 
 message DatasetSpec {
@@ -51,6 +52,8 @@ message GetDatasetsResponse {
 
 message CreateViewRequest {
   repeated DatasetSpec scope = 1;
+  bool unresolved = 2;
+  bool withExternal = 3;
 }
 
 message CreateViewResponse {
@@ -84,4 +87,16 @@ message EntityStreamRequest {
 
 message EntityResponse {
   optional ViewEntity entity = 1;
+}
+
+message AdjacencyRequest {
+  string view_id = 1;
+  string entity_id = 2;
+  string property = 3;
+  bool inverted = 4;
+}
+
+message AdjacencyResponse {
+  string property = 1;
+  ViewEntity entity = 2;
 }
