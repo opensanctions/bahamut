@@ -7,15 +7,20 @@ from zahirclient.proto.view_pb2 import (
     EntityStreamRequest,
     CloseViewRequest,
     CreateViewRequest,
+    DatasetSpec,
 )
 
 log = get_logger("iterate_all")
 catalog = get_catalog()
-dataset = catalog.make_dataset({"name": "test", "title": "test"})
-client = ZahirClient(Entity, dataset, "http://localhost:6674")
+scope = catalog.require("sanctions")
+client = ZahirClient(Entity, scope, "http://localhost:6674")
 server_versions = client.get_datasets()
+specs = []
+for ds, ver in list(server_versions.items()):
+    if ds in scope.datasets:
+        specs.append(DatasetSpec(name=ds, version=ver))
 
-resp = client.view_service.CreateView(CreateViewRequest(unresolved=False))
+resp = client.view_service.CreateView(CreateViewRequest(unresolved=False, scope=specs))
 view_id = resp.view_id
 
 statements = 0

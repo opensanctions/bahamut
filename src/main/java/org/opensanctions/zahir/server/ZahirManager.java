@@ -32,7 +32,7 @@ public class ZahirManager {
         Path dataPath = Paths.get("").toAbsolutePath().resolve(Config.DATA_PATH);
         this.store = new Store(model, dataPath.toString());
         log.info("Store initialized at: {}", store.getPath());
-        this.linker = Linker.fromJsonPath("/Users/pudo/Code/operations/etl/data/resolve.ijson");
+        this.linker = Linker.fromJsonPath("/Users/pudo/Data/resolve.ijson");
         this.sessions = new HashMap<>();
     }
 
