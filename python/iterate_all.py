@@ -17,7 +17,7 @@ client = ZahirClient(Entity, scope, "http://localhost:6674")
 server_versions = client.get_datasets()
 specs = []
 for ds, ver in list(server_versions.items()):
-    if ds in scope.datasets:
+    if ds in scope.dataset_names:
         specs.append(DatasetSpec(name=ds, version=ver))
 
 resp = client.view_service.CreateView(CreateViewRequest(unresolved=False, scope=specs))

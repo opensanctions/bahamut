@@ -99,6 +99,7 @@ public class ViewServiceImpl extends ViewServiceGrpc.ViewServiceImplBase {
         for (DatasetSpec spec : request.getScopeList()) {
             scope.put(spec.getName(), spec.getVersion());
         }
+        log.info("Scoped session: {}", scope.keySet());
         if (scope.isEmpty()) {
             try {
                 scope.putAll(manager.getStore().getDatasets());
