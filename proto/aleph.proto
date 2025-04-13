@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package org.opensanctions.zahir.server.proto.ftmstore;
+
+option java_package = "org.opensanctions.zahir.server.proto.ftmstore";
+option java_multiple_files = true;
+option py_generic_services = false;
+
+// The Aleph service is used to write statements to a RocksDB as a replacement for
+// followthemoney-store. The objective is to:
+//
+// - Support a statement-based backend
+// - Support a streaming API for reading and writing statements
+// - Be faster than the current followthemoney-store
+// - In the future, support cross-dataset entity merging
+
+// ftm-store segments entities into datasets, origins, and fragments. The idea of
+// fragments is made redundant by the use of statement data. Origins are used to
+// delete subsets of the data in a dataset (eg. "flush everything coming from the
+// ingestors"). This will need to still exist.
+
+// Long term, we want to support merging entities across datasets. This is not
+// supported by the current Aleph security model or index, so I've not tried to 
+// future-proof this API for that. It's definitely possible, however, to implement
+// a resolver into this system.
+
+service AlephService {
+    rpc WriteStatements(stream WriteStatement) returns (WriteStatementsResponse) {}
+    rpc GetEntities(EntityStreamRequest) returns (stream EntityResponse) {}
+    rpc DeleteStatements(DeleteStatementsRequest) returns (DeleteStatementsResponse) {}
+    // rpc GetEntityCount(EntityCountRequest) returns (EntityCountResponse) {}
+}
+
+message WriteStatement {
+    // this is super repetitive, but the streaming mode of gRPC does not have a header
+    // we can easily access:
+    string dataset = 1;
+    string origin = 2;
+    optional string id = 3;
+    string entity_id = 4;
+    string schema = 5;
+    string property = 6;
+    string value = 7;
+    optional string lang = 8;
+    optional string originalValue = 9;
+    // do we want to expose this at all?
+    optional int64 first_seen = 10;
+    optional int64 last_seen = 11;
+}
+
+message WriteStatementsResponse {
+    int64 statements_written = 1;
+}
+
+message EntityStreamRequest {
+    // this will need to become a list once/if Aleph supports entity merging:
+    string dataset = 1;
+    optional string origin = 2;
+    // can be 1 or 0 entries:
+    repeated string entity_id = 3;
+}
+
+message ResponseStatement {
+  string id = 1;  // statement, not entity.
+  string schema = 2;
+  string property = 3;
+  // optional string dataset = 6;
+  string value = 4;
+  optional string lang = 5;
+  optional string originalValue = 6;
+  int64 first_seen = 7;
+  int64 last_seen = 8;
+}
+
+message EntityResponse {
+  string id = 1;
+  repeated ResponseStatement statements = 2;
+  // repeated string referents = 3;
+  repeated string origins = 3;
+}
+
+message DeleteStatementsRequest {
+    string dataset = 1;
+    optional string origin = 2;
+    repeated string entity_id = 3;
+}
+
+message DeleteStatementsResponse {
+    int64 statements_deleted = 1;
+}
