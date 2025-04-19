@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    open-pull-requests-limit: 99
+    directory: "/python"
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    open-pull-requests-limit: 99
+    directory: "/"
+    schedule:
+      interval: monthly
+  - package-ecosystem: maven
+    open-pull-requests-limit: 99
+    directory: "/"
+    schedule:
+      interval: monthly
+  - package-ecosystem: "github-actions"
+    open-pull-requests-limit: 99
+    directory: "/"
+    schedule:
+      interval: monthly
