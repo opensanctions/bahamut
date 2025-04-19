@@ -4,13 +4,13 @@ from zavod.entity import Entity
 from zavod.runtime.versions import get_latest
 from zavod.archive import iter_dataset_statements
 
-from zahirclient.client import ZahirClient
+from bahamut.client import BahamutClient
 
 log = get_logger("zavod_sync")
 
 catalog = get_catalog()
 scope = catalog.require("sanctions")
-client = ZahirClient(Entity, scope, "http://localhost:6674")
+client = BahamutClient(Entity, scope, "http://localhost:6674")
 server_versions = client.get_datasets()
 for dataset in scope.datasets:
     if dataset.is_collection:

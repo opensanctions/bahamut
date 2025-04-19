@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package org.opensanctions.zahir.server.proto.v1;
+package tech.followthemoney.bahamut.proto.v1;
 
-option java_package = "org.opensanctions.zahir.server.proto.v1";
+option java_package = "tech.followthemoney.bahamut.proto.v1";
 option java_multiple_files = true;
 option py_generic_services = false;
 

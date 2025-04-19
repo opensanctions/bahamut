@@ -2,8 +2,8 @@ from zavod.logs import get_logger
 from zavod.meta import get_catalog
 from zavod.entity import Entity
 
-from zahirclient.client import ZahirClient
-from zahirclient.proto.view_pb2 import (
+from bahamut.client import BahamutClient
+from bahamut.proto.view_pb2 import (
     EntityStreamRequest,
     CloseViewRequest,
     CreateViewRequest,
@@ -13,7 +13,7 @@ from zahirclient.proto.view_pb2 import (
 log = get_logger("iterate_all")
 catalog = get_catalog()
 scope = catalog.require("sanctions")
-client = ZahirClient(Entity, scope, "http://localhost:6674")
+client = BahamutClient(Entity, scope, "http://localhost:6674")
 server_versions = client.get_datasets()
 specs = []
 for ds, ver in list(server_versions.items()):

@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "zahirclient"
-version = "0.0.1"
+name = "bahamut"
+version = "0.1.0"
 description = "Client library for the followthemoney statement data server."
 readme = "README.md"
 license = "MIT"
@@ -18,15 +18,15 @@ classifiers = [
 ]
 requires-python = ">= 3.11"
 dependencies = [
-    "followthemoney == 3.8.*",
-    "nomenklatura == 3.15.2",
+    "followthemoney == 3.*",
+    "nomenklatura == 3.*",
     "grpcio >= 1.70.0",
 ]
 
 [project.urls]
-Documentation = "https://github.com/opensanctions/zahir/"
-Repository = "https://github.com/opensanctions/zahir.git"
-Issues = "https://github.com/opensanctions/zahir/issues"
+Documentation = "https://github.com/opensanctions/bahamut/"
+Repository = "https://github.com/opensanctions/bahamut.git"
+Issues = "https://github.com/opensanctions/bahamut/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -47,7 +47,10 @@ dev = [
 ]
 
 [tool.hatch.build.targets.sdist]
-only-include = ["zahirclient", "README.md"]
+only-include = ["bahamut", "README.md"]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["bahamut", "README.md"]
 
 [tool.distutils.bdist_wheel]
 universal = true
