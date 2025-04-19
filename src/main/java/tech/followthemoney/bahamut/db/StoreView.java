@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.opensanctions.zahir.db.proto.StatementValue;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -21,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import tech.followthemoney.bahamut.db.proto.StatementValue;
 import tech.followthemoney.bahamut.resolver.Identifier;
 import tech.followthemoney.bahamut.resolver.Linker;
 import tech.followthemoney.entity.StatementEntity;

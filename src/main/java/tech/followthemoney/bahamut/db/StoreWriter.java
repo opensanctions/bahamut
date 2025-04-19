@@ -4,12 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.opensanctions.zahir.db.proto.StatementValue;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import tech.followthemoney.bahamut.db.proto.StatementValue;
 import tech.followthemoney.entity.StatementEntity;
 import tech.followthemoney.exc.SchemaException;
 import tech.followthemoney.model.Property;
