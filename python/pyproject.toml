@@ -43,7 +43,6 @@ dev = [
     "grpcio-tools >= 1.70.0",
     "protoletariat",
     "coverage>=4.1",
-    "types-setuptools",
 ]
 
 [tool.hatch.build.targets.sdist]
