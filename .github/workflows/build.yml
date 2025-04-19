@@ -4,7 +4,7 @@ on: [push]
 permissions:
   id-token: write
   packages: write
-  contents: read
+  contents: write
 
 jobs:
   java:
