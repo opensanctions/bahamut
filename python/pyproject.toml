@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bahamut"
+name = "bahamut-client"
 version = "0.1.0"
 description = "Client library for the followthemoney statement data server."
 readme = "README.md"
