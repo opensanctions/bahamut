@@ -135,7 +135,7 @@
         <dependency>
             <groupId>tech.followthemoney</groupId>
             <artifactId>followthemoney</artifactId>
-            <version>3.8.2</version>
+            <version>3.8.4</version>
         </dependency>
     </dependencies>
 
