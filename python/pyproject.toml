@@ -18,7 +18,7 @@ classifiers = [
 ]
 requires-python = ">= 3.11"
 dependencies = [
-    "followthemoney == 3.*",
+    "followthemoney >= 3,< 5",
     "nomenklatura == 3.*",
     "grpcio >= 1.70.0",
 ]
